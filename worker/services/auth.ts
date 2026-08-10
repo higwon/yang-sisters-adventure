@@ -1,5 +1,5 @@
 const encoder = new TextEncoder();
-const ITERATIONS = 210_000;
+const ITERATIONS = 100_000;
 
 const toHex = (bytes: Uint8Array) => [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 const fromHex = (hex: string) => new Uint8Array(hex.match(/.{2}/g)?.map((byte) => Number.parseInt(byte, 16)) ?? []);

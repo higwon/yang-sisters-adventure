@@ -14,7 +14,7 @@ const app = new Hono<AppEnv>();
 
 app.onError((error, c) => {
   console.error(error);
-  return c.json({ error: error.message || '요청을 처리하지 못했습니다.' }, 500);
+  return c.json({ error: '요청을 처리하지 못했습니다.' }, 500);
 });
 
 app.route('/api/auth', authRoutes);
