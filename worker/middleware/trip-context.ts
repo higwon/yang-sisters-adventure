@@ -1,8 +1,6 @@
 import type { MiddlewareHandler } from 'hono';
 import type { AppEnv } from '../types';
 
-const DEVELOPMENT_USER_ID = 1;
-
 export const tripContext: MiddlewareHandler<AppEnv> = async (c, next) => {
   const tripId = Number(c.req.param('tripId'));
   if (!Number.isInteger(tripId) || tripId <= 0) {
@@ -12,7 +10,7 @@ export const tripContext: MiddlewareHandler<AppEnv> = async (c, next) => {
   const membership = await c.env.DB.prepare(
     'SELECT 1 FROM trip_members WHERE trip_id = ? AND user_id = ?',
   )
-    .bind(tripId, DEVELOPMENT_USER_ID)
+    .bind(tripId, c.get('userId'))
     .first();
 
   if (!membership) {
@@ -20,6 +18,5 @@ export const tripContext: MiddlewareHandler<AppEnv> = async (c, next) => {
   }
 
   c.set('tripId', tripId);
-  c.set('userId', DEVELOPMENT_USER_ID);
   await next();
 };

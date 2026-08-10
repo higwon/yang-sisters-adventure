@@ -1,5 +1,7 @@
 import { Hono } from 'hono';
+import { requireAuth } from './middleware/auth';
 import { tripContext } from './middleware/trip-context';
+import { authRoutes } from './routes/auth';
 import { checklistRoutes } from './routes/checklist';
 import { dashboardRoutes } from './routes/dashboard';
 import { expenseRoutes } from './routes/expenses';
@@ -15,7 +17,10 @@ app.onError((error, c) => {
   return c.json({ error: error.message || '요청을 처리하지 못했습니다.' }, 500);
 });
 
+app.route('/api/auth', authRoutes);
+
 const tripRoutes = new Hono<AppEnv>();
+tripRoutes.use('*', requireAuth);
 tripRoutes.use('*', tripContext);
 tripRoutes.route('/', dashboardRoutes);
 tripRoutes.route('/', scheduleRoutes);

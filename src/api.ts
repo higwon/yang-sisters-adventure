@@ -1,8 +1,8 @@
 import type { ChecklistItem, Dashboard, Expense, Place, Reservation, ScheduleItem } from './domain';
 
 const TRIP_ID = 1;
-const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
-  const response = await fetch(`/api/trips/${TRIP_ID}${path}`, {
+const request = async <T>(url: string, init?: RequestInit): Promise<T> => {
+  const response = await fetch(url, {
     ...init,
     headers: { 'content-type': 'application/json', ...init?.headers },
   });
@@ -13,14 +13,22 @@ const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
   return response.json() as Promise<T>;
 };
 
+export interface AuthUser { id: number; name: string; email: string; avatar_color: string }
+const tripRequest = <T>(path: string, init?: RequestInit) => request<T>(`/api/trips/${TRIP_ID}${path}`, init);
+const authRequest = <T>(path: string, init?: RequestInit) => request<T>(`/api/auth${path}`, init);
+
 export const api = {
-  dashboard: () => request<Dashboard>('/dashboard'),
-  schedule: () => request<ScheduleItem[]>('/schedule'),
-  places: () => request<Place[]>('/places'),
-  checklist: () => request<ChecklistItem[]>('/checklist'),
-  expenses: () => request<Expense[]>('/expenses'),
-  reservations: () => request<Reservation[]>('/reservations'),
-  create: <T>(resource: string, data: unknown) => request<T>(`/${resource}`, { method: 'POST', body: JSON.stringify(data) }),
-  update: <T>(resource: string, id: string | number, data: unknown) => request<T>(`/${resource}/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-  remove: (resource: string, id: string | number) => request<{ ok: boolean }>(`/${resource}/${id}`, { method: 'DELETE' }),
+  me: () => authRequest<{ user: AuthUser }>('/me'),
+  login: (login_identifier: string, password: string) => authRequest<{ user: AuthUser }>('/login', { method: 'POST', body: JSON.stringify({ login_identifier, password }) }),
+  register: (name: string, login_identifier: string, password: string) => authRequest<{ user: AuthUser }>('/register', { method: 'POST', body: JSON.stringify({ name, login_identifier, password }) }),
+  logout: () => authRequest<{ ok: boolean }>('/logout', { method: 'POST' }),
+  dashboard: () => tripRequest<Dashboard>('/dashboard'),
+  schedule: () => tripRequest<ScheduleItem[]>('/schedule'),
+  places: () => tripRequest<Place[]>('/places'),
+  checklist: () => tripRequest<ChecklistItem[]>('/checklist'),
+  expenses: () => tripRequest<Expense[]>('/expenses'),
+  reservations: () => tripRequest<Reservation[]>('/reservations'),
+  create: <T>(resource: string, data: unknown) => tripRequest<T>(`/${resource}`, { method: 'POST', body: JSON.stringify(data) }),
+  update: <T>(resource: string, id: string | number, data: unknown) => tripRequest<T>(`/${resource}/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  remove: (resource: string, id: string | number) => tripRequest<{ ok: boolean }>(`/${resource}/${id}`, { method: 'DELETE' }),
 };
