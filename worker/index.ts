@@ -1,8 +1,28 @@
-import{Hono}from'hono';import{z}from'zod';import{zValidator}from'@hono/zod-validator';type Env={DB:D1Database};const app=new Hono<{Bindings:Env}>(),trip=1;app.onError((e,c)=>c.json({error:e.message},500));
-app.get('/api/dashboard',async c=>{const[t,m,k,n,u]=await Promise.all([c.env.DB.prepare('SELECT * FROM trips WHERE id=?').bind(trip).first(),c.env.DB.prepare('SELECT u.*,tm.role FROM trip_members tm JOIN users u ON u.id=tm.user_id WHERE tm.trip_id=?').bind(trip).all(),c.env.DB.prepare('SELECT COUNT(*) total,SUM(is_completed) completed FROM checklist_items WHERE trip_id=?').bind(trip).first(),c.env.DB.prepare("SELECT s.*,d.day_date,d.day_number,p.name place_name FROM schedule_items s JOIN trip_days d ON d.id=s.trip_day_id LEFT JOIN places p ON p.id=s.place_id WHERE s.trip_id=? AND d.day_date>=date('now') ORDER BY d.day_date,s.start_time LIMIT 1").bind(trip).first(),c.env.DB.prepare('SELECT content text,created_at at FROM notes WHERE trip_id=? ORDER BY created_at DESC LIMIT 3').bind(trip).all()]);return c.json({trip:t,members:m.results,checklist:{completed:Number(k?.completed??0),total:Number(k?.total??0)},nextSchedule:n,recentUpdates:u.results})});
-app.get('/api/schedule',async c=>c.json((await c.env.DB.prepare('SELECT s.*,d.day_date,d.day_number,p.name place_name FROM schedule_items s JOIN trip_days d ON d.id=s.trip_day_id LEFT JOIN places p ON p.id=s.place_id WHERE s.trip_id=? ORDER BY d.day_date,s.start_time').bind(trip).all()).results));app.get('/api/places',async c=>c.json((await c.env.DB.prepare('SELECT * FROM places WHERE trip_id=? ORDER BY is_must_visit DESC,name').bind(trip).all()).results));app.get('/api/checklist',async c=>c.json((await c.env.DB.prepare('SELECT i.*,u.name assignee_name FROM checklist_items i LEFT JOIN users u ON u.id=i.assignee_id WHERE i.trip_id=? ORDER BY i.is_completed,i.due_date').bind(trip).all()).results));app.get('/api/reservations',async c=>c.json((await c.env.DB.prepare('SELECT * FROM reservations WHERE trip_id=? ORDER BY reservation_date').bind(trip).all()).results));
-app.get('/api/expenses',async c=>{const rows=(await c.env.DB.prepare('SELECT e.*,u.name payer_name FROM expenses e JOIN users u ON u.id=e.paid_by WHERE e.trip_id=? ORDER BY e.expense_date DESC').bind(trip).all()).results as Record<string,unknown>[];for(const e of rows)e.participants=(await c.env.DB.prepare('SELECT ep.user_id,u.name,ep.share_amount FROM expense_participants ep JOIN users u ON u.id=ep.user_id WHERE ep.expense_id=?').bind(e.id).all()).results;return c.json(rows)});
-const place=z.object({name:z.string().min(1),category:z.string(),address:z.string().nullable().optional(),map_url:z.string().url().nullable().optional(),is_must_visit:z.number().default(0)});app.post('/api/places',zValidator('json',place),async c=>{const x=c.req.valid('json');return c.json(await c.env.DB.prepare('INSERT INTO places(trip_id,name,category,address,map_url,is_must_visit)VALUES(?,?,?,?,?,?)RETURNING *').bind(trip,x.name,x.category,x.address??null,x.map_url??null,x.is_must_visit).first(),201)});
-const check=z.object({title:z.string().min(1),category:z.string(),due_date:z.string().nullable().optional(),is_completed:z.number().default(0)});app.post('/api/checklist',zValidator('json',check),async c=>{const x=c.req.valid('json');return c.json(await c.env.DB.prepare('INSERT INTO checklist_items(trip_id,title,category,due_date,is_completed)VALUES(?,?,?,?,?)RETURNING *').bind(trip,x.title,x.category,x.due_date??null,x.is_completed).first(),201)});app.patch('/api/checklist/:id',async c=>{const x=await c.req.json<{is_completed:number}>();return c.json(await c.env.DB.prepare('UPDATE checklist_items SET is_completed=? WHERE id=? AND trip_id=? RETURNING *').bind(x.is_completed,c.req.param('id'),trip).first())});
-const reservation=z.object({title:z.string().min(1),type:z.string(),reservation_date:z.string().nullable().optional(),confirmation_number:z.string().nullable().optional()});app.post('/api/reservations',zValidator('json',reservation),async c=>{const x=c.req.valid('json');return c.json(await c.env.DB.prepare('INSERT INTO reservations(trip_id,title,type,reservation_date,confirmation_number)VALUES(?,?,?,?,?)RETURNING *').bind(trip,x.title,x.type,x.reservation_date??null,x.confirmation_number??null).first(),201)});
-const expense=z.object({title:z.string().min(1),amount:z.number().positive(),currency:z.enum(['KRW','PHP']),paid_by:z.number(),expense_date:z.string(),category:z.string(),participant_ids:z.array(z.number()).min(1)});app.post('/api/expenses',zValidator('json',expense),async c=>{const x=c.req.valid('json'),e=await c.env.DB.prepare('INSERT INTO expenses(trip_id,title,amount,currency,paid_by,expense_date,category)VALUES(?,?,?,?,?,?,?)RETURNING id').bind(trip,x.title,x.amount,x.currency,x.paid_by,x.expense_date,x.category).first<{id:number}>();if(!e)throw Error('비용 저장 실패');const share=Math.round(x.amount/x.participant_ids.length*100)/100;await c.env.DB.batch(x.participant_ids.map(id=>c.env.DB.prepare('INSERT INTO expense_participants VALUES(?,?,?)').bind(e.id,id,share)));return c.json(e,201)});for(const table of['places','checklist_items','reservations','expenses']as const){const route=table==='checklist_items'?'checklist':table;app.delete(`/api/${route}/:id`,async c=>{const r=await c.env.DB.prepare(`DELETE FROM ${table} WHERE id=? AND trip_id=?`).bind(c.req.param('id'),trip).run();return c.json({ok:r.meta.changes>0})})}export default app;
+import { Hono } from 'hono';
+import { tripContext } from './middleware/trip-context';
+import { checklistRoutes } from './routes/checklist';
+import { dashboardRoutes } from './routes/dashboard';
+import { expenseRoutes } from './routes/expenses';
+import { placeRoutes } from './routes/places';
+import { reservationRoutes } from './routes/reservations';
+import { scheduleRoutes } from './routes/schedule';
+import type { AppEnv } from './types';
+
+const app = new Hono<AppEnv>();
+
+app.onError((error, c) => {
+  console.error(error);
+  return c.json({ error: error.message || '요청을 처리하지 못했습니다.' }, 500);
+});
+
+const tripRoutes = new Hono<AppEnv>();
+tripRoutes.use('*', tripContext);
+tripRoutes.route('/', dashboardRoutes);
+tripRoutes.route('/', scheduleRoutes);
+tripRoutes.route('/', placeRoutes);
+tripRoutes.route('/', checklistRoutes);
+tripRoutes.route('/', expenseRoutes);
+tripRoutes.route('/', reservationRoutes);
+app.route('/api/trips/:tripId', tripRoutes);
+
+export default app;

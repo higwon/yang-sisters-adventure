@@ -1,2 +1,43 @@
-export type Currency='KRW'|'PHP';export interface User{id:number;name:string;email:string;avatar_color:string}export interface Trip{id:number;name:string;destination:string;country_code:string;start_date:string;end_date:string;timezone:string}export interface Member extends User{role:'owner'|'member'}export interface Place{id:number;trip_id:number;name:string;category:string;address:string|null;map_url:string|null;website_url:string|null;notes:string|null;is_must_visit:number}export interface ScheduleItem{id:number;trip_id:number;trip_day_id:number;day_date:string;day_number:number;title:string;start_time:string|null;end_time:string|null;category:string;notes:string|null;place_id:number|null;place_name:string|null;status:string}export interface ChecklistItem{id:number;trip_id:number;title:string;is_completed:number;assignee_id:number|null;assignee_name:string|null;due_date:string|null;category:string;notes:string|null}export interface Reservation{id:number;trip_id:number;title:string;type:string;reservation_date:string|null;confirmation_number:string|null;link:string|null;notes:string|null}export interface Expense{id:number;trip_id:number;title:string;amount:number;currency:Currency;paid_by:number;payer_name:string;expense_date:string;category:string;notes:string|null;participants:{user_id:number;name:string;share_amount:number}[]}export interface Dashboard{trip:Trip;members:Member[];checklist:{completed:number;total:number};nextSchedule:ScheduleItem|null;recentUpdates:{text:string;at:string}[]}export interface Settlement{from:number;to:number;amount:number;currency:Currency}
-export function calculateSettlements(expenses:Expense[],currency:Currency):Settlement[]{const b=new Map<number,number>();for(const e of expenses.filter(x=>x.currency===currency)){b.set(e.paid_by,(b.get(e.paid_by)??0)+e.amount);for(const p of e.participants)b.set(p.user_id,(b.get(p.user_id)??0)-p.share_amount)}const d=[...b].filter(([,v])=>v<-.01).map(([id,v])=>({id,amount:-v})),cr=[...b].filter(([,v])=>v>.01).map(([id,v])=>({id,amount:v})),out:Settlement[]=[];let i=0,j=0;while(i<d.length&&j<cr.length){const amount=Math.min(d[i].amount,cr[j].amount);out.push({from:d[i].id,to:cr[j].id,amount:Math.round(amount*100)/100,currency});d[i].amount-=amount;cr[j].amount-=amount;if(d[i].amount<.01)i++;if(cr[j].amount<.01)j++}return out}
+export type Currency = 'KRW' | 'PHP';
+export interface User { id: number; name: string; email: string; avatar_color: string }
+export interface Trip { id: number; name: string; destination: string; country_code: string; start_date: string; end_date: string; timezone: string }
+export interface Member extends User { role: 'owner' | 'member' }
+export interface Place { id: number; trip_id: number; name: string; category: string; address: string | null; map_url: string | null; website_url: string | null; notes: string | null; is_must_visit: number }
+export interface ScheduleItem { id: number; trip_id: number; trip_day_id: number; day_date: string; day_number: number; title: string; start_time: string | null; end_time: string | null; category: string; notes: string | null; place_id: number | null; place_name: string | null; status: 'confirmed' | 'candidate' }
+export interface ChecklistItem { id: number; trip_id: number; title: string; is_completed: number; assignee_id: number | null; assignee_name: string | null; due_date: string | null; category: string; notes: string | null }
+export interface Reservation { id: number; trip_id: number; title: string; type: string; reservation_date: string | null; confirmation_number: string | null; link: string | null; notes: string | null }
+export interface ExpenseParticipant { user_id: number; name: string; share_amount_minor: number }
+export interface Expense { id: string; trip_id: number; title: string; amount_minor: number; currency: Currency; paid_by: number; payer_name: string; expense_date: string; category: string; notes: string | null; participants: ExpenseParticipant[] }
+export interface Dashboard { trip: Trip; members: Member[]; checklist: { completed: number; total: number }; nextSchedule: ScheduleItem | null; recentUpdates: { text: string; at: string }[] }
+export interface Settlement { from: number; to: number; amount_minor: number; currency: Currency }
+
+export function splitAmountMinor(amountMinor: number, participantIds: number[]) {
+  if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0) throw new Error('금액이 올바르지 않습니다.');
+  const uniqueIds = [...new Set(participantIds)];
+  if (!uniqueIds.length || uniqueIds.length !== participantIds.length) throw new Error('참여자를 확인해 주세요.');
+  const base = Math.floor(amountMinor / uniqueIds.length);
+  const remainder = amountMinor % uniqueIds.length;
+  return uniqueIds.map((userId, index) => ({ userId, shareAmountMinor: base + (index < remainder ? 1 : 0) }));
+}
+
+export function calculateSettlements(expenses: Expense[], currency: Currency): Settlement[] {
+  const balances = new Map<number, number>();
+  for (const expense of expenses.filter((item) => item.currency === currency)) {
+    balances.set(expense.paid_by, (balances.get(expense.paid_by) ?? 0) + expense.amount_minor);
+    for (const participant of expense.participants) {
+      balances.set(participant.user_id, (balances.get(participant.user_id) ?? 0) - participant.share_amount_minor);
+    }
+  }
+  const debtors = [...balances].filter(([, value]) => value < 0).map(([id, value]) => ({ id, amount: -value }));
+  const creditors = [...balances].filter(([, value]) => value > 0).map(([id, amount]) => ({ id, amount }));
+  const result: Settlement[] = [];
+  let debtorIndex = 0; let creditorIndex = 0;
+  while (debtorIndex < debtors.length && creditorIndex < creditors.length) {
+    const amount = Math.min(debtors[debtorIndex].amount, creditors[creditorIndex].amount);
+    result.push({ from: debtors[debtorIndex].id, to: creditors[creditorIndex].id, amount_minor: amount, currency });
+    debtors[debtorIndex].amount -= amount; creditors[creditorIndex].amount -= amount;
+    if (debtors[debtorIndex].amount === 0) debtorIndex += 1;
+    if (creditors[creditorIndex].amount === 0) creditorIndex += 1;
+  }
+  return result;
+}
