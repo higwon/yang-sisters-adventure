@@ -60,6 +60,8 @@ npm run deploy
 
 `npm run deploy`는 빌드 후 Worker, 정적 assets와 D1 binding을 Cloudflare에 배포합니다. 최초 배포 전 원격 migration을 먼저 적용해야 합니다.
 
+Cloudflare Workers Builds는 GitHub의 `higwon/yang-sisters-adventure` 저장소와 연결되어 있습니다. 프로덕션 브랜치 `agent/initial-cloudflare-app`에 푸시하면 `npm run build` 후 `npx wrangler deploy`가 자동 실행됩니다.
+
 ## 현재 범위
 
 홈 요약, 날짜별 일정 조회, 장소·준비·비용·예약 추가, 체크 완료 변경, KRW/PHP별 균등 비용 분할 및 정산 미리보기를 제공합니다. 일정 편집, 세부 참여 비율 편집, 실제 로그인/권한 검사, 환율·지도 API, 여러 여행을 선택하는 UI는 다음 단계입니다.
