@@ -20,7 +20,6 @@ const authRequest = <T>(path: string, init?: RequestInit) => request<T>(`/api/au
 export const api = {
   me: () => authRequest<{ user: AuthUser }>('/me'),
   login: (login_identifier: string, password: string) => authRequest<{ user: AuthUser }>('/login', { method: 'POST', body: JSON.stringify({ login_identifier, password }) }),
-  register: (name: string, login_identifier: string, password: string) => authRequest<{ user: AuthUser }>('/register', { method: 'POST', body: JSON.stringify({ name, login_identifier, password }) }),
   logout: () => authRequest<{ ok: boolean }>('/logout', { method: 'POST' }),
   dashboard: () => tripRequest<Dashboard>('/dashboard'),
   schedule: () => tripRequest<ScheduleItem[]>('/schedule'),

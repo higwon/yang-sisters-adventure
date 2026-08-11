@@ -3,11 +3,13 @@ import { Hono, type Context } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { z } from 'zod';
 import { requireAuth, SESSION_COOKIE } from '../middleware/auth';
-import { createSessionToken, hashPassword, hashSessionToken, normalizeLoginIdentifier, verifyPassword } from '../services/auth';
+import { createSessionToken, hashSessionToken, normalizeLoginIdentifier, verifyPassword } from '../services/auth';
 import type { AppEnv } from '../types';
 
-const credentials = z.object({ login_identifier: z.string().trim().min(3).max(254), password: z.string().min(10).max(128) });
-const registration = credentials.extend({ name: z.string().trim().min(1).max(60) });
+const credentials = z.object({
+  login_identifier: z.string().trim().min(1),
+  password: z.string().min(1),
+});
 const SESSION_SECONDS = 60 * 60 * 24 * 30;
 
 export const authRoutes = new Hono<AppEnv>();
@@ -26,24 +28,6 @@ async function startSession(c: Context<AppEnv>, userId: number) {
     maxAge: SESSION_SECONDS,
   });
 }
-
-authRoutes.post('/register', zValidator('json', registration), async (c) => {
-  const body = c.req.valid('json');
-  const loginIdentifier = normalizeLoginIdentifier(body.login_identifier);
-  const passwordHash = await hashPassword(body.password);
-  try {
-    const result = await c.env.DB.prepare(
-      `INSERT INTO users(name, email, avatar_color, login_identifier, password_hash)
-       VALUES (?, ?, '#e8795a', ?, ?)`,
-    ).bind(body.name, loginIdentifier, loginIdentifier, passwordHash).run();
-    const userId = Number(result.meta.last_row_id);
-    await startSession(c, userId);
-    return c.json({ user: { id: userId, name: body.name, email: loginIdentifier, avatar_color: '#e8795a' } }, 201);
-  } catch (error) {
-    if (String(error).includes('UNIQUE')) return c.json({ error: '이미 사용 중인 로그인 아이디입니다.' }, 409);
-    throw error;
-  }
-});
 
 authRoutes.post('/login', zValidator('json', credentials), async (c) => {
   const body = c.req.valid('json');
