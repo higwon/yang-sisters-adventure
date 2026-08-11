@@ -31,12 +31,18 @@ boardRoutes.get('/posts', async (c) => {
 
 boardRoutes.post('/posts', async (c) => {
   const form = await c.req.formData();
+  const kind = String(form.get('kind') ?? 'general');
+  if (!['general', 'place', 'restaurant', 'cafe', 'tour', 'info'].includes(kind)) return c.json({ error: '게시물 종류를 확인해 주세요.' }, 400);
+  const title = String(form.get('title') ?? '').trim() || null;
   const content = String(form.get('content') ?? '').trim() || null;
   const rawUrl = String(form.get('url') ?? '').trim();
   const url = rawUrl || null;
+  const rawMapUrl = String(form.get('map_url') ?? '').trim();
+  const mapUrl = rawMapUrl || null;
   if (url && !z.string().url().safeParse(url).success) return c.json({ error: '올바른 URL을 입력해 주세요.' }, 400);
+  if (mapUrl && !z.string().url().safeParse(mapUrl).success) return c.json({ error: '올바른 지도 URL을 입력해 주세요.' }, 400);
   const files = form.getAll('files').filter((item): item is File => item instanceof File && item.size > 0);
-  if (!content && !url && files.length === 0) return c.json({ error: '내용, URL 또는 첨부파일을 입력해 주세요.' }, 400);
+  if (!title && !content && !url && !mapUrl && files.length === 0) return c.json({ error: '제목, 내용, URL 또는 첨부파일을 입력해 주세요.' }, 400);
   try {
     validateAttachments(files);
     const usedBytes = await c.env.DB.prepare('SELECT COALESCE(SUM(byte_size),0) bytes FROM attachments').first<number>('bytes') ?? 0;
@@ -45,8 +51,8 @@ boardRoutes.post('/posts', async (c) => {
     return c.json({ error: error instanceof Error ? error.message : '첨부파일을 확인해 주세요.' }, 400);
   }
 
-  const post = await c.env.DB.prepare('INSERT INTO posts(trip_id,author_id,content,url) VALUES(?,?,?,?) RETURNING id')
-    .bind(c.get('tripId'), c.get('userId'), content, url).first<{ id: number }>();
+  const post = await c.env.DB.prepare('INSERT INTO posts(trip_id,author_id,kind,title,content,url,map_url) VALUES(?,?,?,?,?,?,?) RETURNING id')
+    .bind(c.get('tripId'), c.get('userId'), kind, title, content, url, mapUrl).first<{ id: number }>();
   if (!post) return c.json({ error: '게시물을 저장하지 못했어요.' }, 500);
   const uploaded: string[] = [];
   try {
@@ -94,22 +100,24 @@ boardRoutes.post('/posts/:id/convert', zValidator('json', conversionSchema), asy
   const tripId = c.get('tripId');
   const data = c.req.valid('json');
   const post = await c.env.DB.prepare('SELECT * FROM posts WHERE id=? AND trip_id=?').bind(c.req.param('id'), tripId)
-    .first<{ id: number; content: string | null; url: string | null }>();
+    .first<{ id: number; kind: string; title: string | null; content: string | null; url: string | null; map_url: string | null }>();
   if (!post) return c.json({ error: '게시물을 찾을 수 없어요.' }, 404);
   const existing = await c.env.DB.prepare('SELECT target_id FROM post_conversions WHERE post_id=? AND target_type=?')
     .bind(post.id, data.target_type).first<number>('target_id');
   if (existing) return c.json({ target_id: existing });
-  const title = data.title ?? post.content?.split('\n')[0]?.slice(0, 100) ?? '공유한 여행 정보';
+  const title = data.title ?? post.title ?? post.content?.split('\n')[0]?.slice(0, 100) ?? '공유한 여행 정보';
+  const linkedUrl = post.map_url ?? post.url;
+  const planningType = ({ place: '관광', restaurant: '식사', cafe: '카페', tour: '관광', info: '기타', general: '기타' } as Record<string, string>)[post.kind] ?? '기타';
   let targetId: number | null | undefined;
   if (data.target_type === 'planning') {
     targetId = await c.env.DB.prepare(`INSERT INTO planning_items(trip_id,title,item_type,url,notes,created_by) VALUES(?,?,?,?,?,?) RETURNING id`)
-      .bind(tripId, title, '기타', post.url, post.content, c.get('userId')).first<number>('id');
+      .bind(tripId, title, planningType, linkedUrl, post.content, c.get('userId')).first<number>('id');
   } else if (data.target_type === 'place') {
     targetId = await c.env.DB.prepare(`INSERT INTO places(trip_id,name,category,website_url,notes,is_must_visit) VALUES(?,?,?,?,?,0) RETURNING id`)
-      .bind(tripId, title, '기타', post.url, post.content).first<number>('id');
+      .bind(tripId, title, post.kind, linkedUrl, post.content).first<number>('id');
   } else {
     targetId = await c.env.DB.prepare(`INSERT INTO reservations(trip_id,title,type,link,notes) VALUES(?,?,?,?,?) RETURNING id`)
-      .bind(tripId, title, '기타', post.url, post.content).first<number>('id');
+      .bind(tripId, title, '기타', linkedUrl, post.content).first<number>('id');
   }
   if (!targetId) return c.json({ error: '여행 데이터로 전환하지 못했어요.' }, 500);
   await c.env.DB.prepare('INSERT INTO post_conversions(post_id,target_type,target_id) VALUES(?,?,?)')

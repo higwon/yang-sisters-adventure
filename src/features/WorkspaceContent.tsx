@@ -6,7 +6,6 @@ import { calculateSettlements, type Currency, type Member, type Reservation } fr
 import { SchedulePage } from './schedule/SchedulePage';
 import { BoardPage } from './board/BoardPage';
 import { HomePage as CollaborativeHomePage } from './home/HomePage';
-import { MapPage } from './map/MapPage';
 
 const minorDigits = (currency: Currency) => currency === 'PHP' ? 2 : 0;
 const toMinor = (value: string, currency: Currency) => Math.round(Number(value) * 10 ** minorDigits(currency));
@@ -27,8 +26,6 @@ const submit = (resource: string, close: () => void, reload: () => void, map?: (
 
 function HomePage() { return <CollaborativeHomePage />; }
 
-function PlacesPage() { return <MapPage />; }
-
 function ChecklistPage() { const [open, setOpen] = useState(false); return <Load fn={api.dashboard}>{(dashboard) => <Load fn={api.checklist}>{(items, reload) => <><Heading title="여행 준비" add={() => setOpen(true)} /><section className="checks">{items.map((item) => <label className={item.is_completed ? 'done' : ''} key={item.id}><input type="checkbox" checked={Boolean(item.is_completed)} onChange={async (event) => { await api.update('checklist', item.id, { is_completed: event.target.checked ? 1 : 0 }); reload(); }} /><span><b>{item.title}</b><small>{item.assignee_name ?? '담당자 미정'} · {item.due_date ?? '마감일 없음'}</small></span><em>{item.category}</em></label>)}</section>{open && <Modal title="준비 항목 추가" close={() => setOpen(false)}><form onSubmit={submit('checklist', () => setOpen(false), reload, (x) => ({ ...x, assignee_id: x.assignee_id ? Number(x.assignee_id) : null, due_date: x.due_date || null, is_completed: 0 }))}><Field label="할 일" name="title" /><Select label="담당자" name="assignee_id"><option value="">미정</option>{dashboard.members.map((member) => <option value={member.id} key={member.id}>{member.name}</option>)}</Select><Select label="카테고리" name="category"><option>예약</option><option>준비물</option><option>통신</option><option>금융</option></Select><Field label="마감일" name="due_date" type="date" required={false} /><button className="primary">저장</button></form></Modal>}</>}</Load>}</Load>; }
 
 function ExpensesPage() { const [open, setOpen] = useState(false); return <Load fn={api.dashboard}>{(dashboard) => <Load fn={api.expenses}>{(items, reload) => <><Heading title="여행 비용" add={() => setOpen(true)} /><div className="totals">{(['KRW', 'PHP'] as const).map((currency) => <article key={currency}><small>{currency} 사용액</small><b>{money(items.filter((item) => item.currency === currency).reduce((sum, item) => sum + item.amount_minor, 0), currency)}</b></article>)}</div><section className="expenseList">{items.map((item) => <article key={item.id}><div><b>{item.title}</b><small>{item.expense_date} · {item.payer_name} 결제 · {item.participants.map((person) => person.name).join(', ')}</small></div><strong>{money(item.amount_minor, item.currency)}</strong><button className="delete" onClick={async () => { if (confirm('비용을 삭제할까요?')) { await api.remove('expenses', item.id); reload(); } }}><Trash2 size={15} /></button></article>)}</section><section className="settle"><h3>정산 미리보기</h3>{(['KRW', 'PHP'] as const).flatMap((currency) => calculateSettlements(items, currency)).map((settlement, index) => <p key={index}>{dashboard.members.find((member) => member.id === settlement.from)?.name} → {dashboard.members.find((member) => member.id === settlement.to)?.name}<b>{money(settlement.amount_minor, settlement.currency)}</b></p>)}</section>{open && <ExpenseForm members={dashboard.members} close={() => setOpen(false)} reload={reload} />}</>}</Load>}</Load>; }
@@ -45,7 +42,7 @@ function ComingSoon({ title, issue }: { title: string; issue: number }) { return
 
 export function WorkspaceContent({ page }: { page: WorkspacePage }) {
   const views: Record<WorkspacePage, ReactNode> = {
-    home: <HomePage />, schedule: <SchedulePage />, map: <PlacesPage />, board: <BoardPage />,
+    home: <HomePage />, schedule: <SchedulePage />, board: <BoardPage />,
     checklist: <ChecklistPage />, expenses: <ExpensesPage />, info: <InfoPage />, more: <ComingSoon title="여행 도구" issue={3} />,
   };
   return <>{views[page]}</>;

@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react';
-import { CalendarDays, CheckCircle2, ChevronDown, CircleEllipsis, Home, Map, MessageCircle, Settings, TicketCheck, Users, WalletCards, Wrench } from 'lucide-react';
+import { CalendarDays, CheckCircle2, ChevronDown, CircleEllipsis, Home, MessageCircle, Settings, TicketCheck, Users, WalletCards, Wrench } from 'lucide-react';
 import type { TripSummary } from '../api';
 import type { WorkspacePage } from '../app/navigation';
 
 type NavItem = { id: WorkspacePage; label: string; icon: typeof Home };
 const primary: NavItem[] = [
   { id: 'home', label: '홈', icon: Home }, { id: 'schedule', label: '일정', icon: CalendarDays },
-  { id: 'map', label: '지도', icon: Map }, { id: 'board', label: '보드', icon: MessageCircle },
+  { id: 'board', label: '보드', icon: MessageCircle },
 ];
 const preparation: NavItem[] = [
   { id: 'info', label: '예약 / 정보', icon: TicketCheck }, { id: 'checklist', label: '체크리스트', icon: CheckCircle2 },

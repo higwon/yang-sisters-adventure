@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react';
 
-export type WorkspacePage = 'home' | 'schedule' | 'map' | 'board' | 'expenses' | 'info' | 'checklist' | 'more';
+export type WorkspacePage = 'home' | 'schedule' | 'board' | 'expenses' | 'info' | 'checklist' | 'more';
 
-const pages = new Set<WorkspacePage>(['home', 'schedule', 'map', 'board', 'expenses', 'info', 'checklist', 'more']);
+const pages = new Set<WorkspacePage>(['home', 'schedule', 'board', 'expenses', 'info', 'checklist', 'more']);
 
 export function readWorkspacePath() {
   const match = window.location.pathname.match(/^\/trips\/(\d+)(?:\/([^/]+))?\/?$/);
   if (!match) return null;
+  if (match[2] === 'map' || match[2] === 'places') {
+    window.history.replaceState({}, '', `/trips/${match[1]}/board`);
+    return { tripId: Number(match[1]), page: 'board' as WorkspacePage };
+  }
   const candidate = match[2] as WorkspacePage | undefined;
   return { tripId: Number(match[1]), page: candidate && pages.has(candidate) ? candidate : 'home' as WorkspacePage };
 }

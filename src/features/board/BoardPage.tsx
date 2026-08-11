@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ExternalLink, FileText, Image, MapPin, Plus, Send, TicketCheck, Trash2 } from 'lucide-react';
+import { ExternalLink, FileText, Image, MapPinned, Plus, Send, TicketCheck, Trash2 } from 'lucide-react';
 import { boardApi, type BoardPost } from './boardApi';
 import './board.css';
 
@@ -12,8 +12,11 @@ export function BoardPage() {
   const [usage, setUsage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [kind, setKind] = useState('general');
+  const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [url, setUrl] = useState('');
+  const [mapUrl, setMapUrl] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -31,8 +34,8 @@ export function BoardPage() {
   const publish = async (event: React.FormEvent) => {
     event.preventDefault();
     try {
-      await boardApi.createPost({ content, url, files });
-      setContent(''); setUrl(''); setFiles([]); if (inputRef.current) inputRef.current.value = '';
+      await boardApi.createPost({ kind, title, content, url, map_url: mapUrl, files });
+      setKind('general'); setTitle(''); setContent(''); setUrl(''); setMapUrl(''); setFiles([]); if (inputRef.current) inputRef.current.value = '';
       await load();
     } catch (reason) { setError(reason instanceof Error ? reason.message : '게시물을 저장하지 못했어요.'); }
   };
@@ -45,19 +48,25 @@ export function BoardPage() {
   return <section className="boardPage">
     <header className="boardHeader"><div><small>TRIP BOARD</small><h1>함께 모으는 여행 자료</h1><p>링크와 파일을 공유하고 일정 후보, 장소, 예약 정보로 바로 옮겨보세요.</p></div><aside><b>{formatBytes(usage)} / 2GB</b><span><i style={{ width: `${Math.min(100, usage / (2 * 1024 * 1024 * 1024) * 100)}%` }} /></span><small>앱 저장공간 하드캡</small></aside></header>
     <form className="postComposer" onSubmit={publish}>
+      <div className="composerMeta"><select value={kind} onChange={(event) => setKind(event.target.value)}><option value="general">일반</option><option value="place">장소</option><option value="restaurant">맛집</option><option value="cafe">카페</option><option value="tour">투어</option><option value="info">예약/정보</option></select><input value={title} onChange={(event) => setTitle(event.target.value)} placeholder={kind === 'general' ? '제목 (선택)' : '장소 또는 정보 이름'} /></div>
       <textarea value={content} onChange={(event) => setContent(event.target.value)} placeholder="함께 볼 여행 정보나 메모를 남겨보세요." />
-      <input type="url" value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https:// 공유할 링크 (선택)" />
+      <div className="composerLinks"><input type="url" value={url} onChange={(event) => setUrl(event.target.value)} placeholder="일반 링크 (선택)" /><input type="url" value={mapUrl} onChange={(event) => setMapUrl(event.target.value)} placeholder="Google Maps 등 지도 링크 (선택)" /></div>
       <footer><label><Plus size={16} />파일 추가<input ref={inputRef} type="file" multiple accept="image/jpeg,image/png,image/webp,application/pdf" onChange={(event) => setFiles(Array.from(event.target.files ?? []))} /></label><span>{files.map((file) => file.name).join(', ')}</span><button className="primary"><Send size={16} />게시</button></footer>
     </form>
     {error && <p className="boardError">{error}</p>}
     <div className="postFeed">{posts.map((post) => <article className="postCard" key={post.id}>
       <header><i style={{ background: post.avatar_color }}>{post.author_name[0]}</i><div><b>{post.author_name}</b><small>{post.created_at.replace('T', ' ').slice(0, 16)}</small></div><button aria-label="게시물 삭제" onClick={async () => { if (confirm('게시물과 첨부파일을 삭제할까요?')) { await boardApi.deletePost(post.id); await load(); } }}><Trash2 size={16} /></button></header>
+      <small className={`postKind ${post.kind}`}>{kindLabel(post.kind)}</small>
+      {post.title && <h2>{post.title}</h2>}
       {post.content && <p>{post.content}</p>}
       {post.url && <a className="sharedUrl" href={post.url} target="_blank" rel="noreferrer"><ExternalLink size={15} />{post.url}</a>}
+      {post.map_url && <a className="sharedUrl mapLink" href={post.map_url} target="_blank" rel="noreferrer"><MapPinned size={15} />지도에서 보기</a>}
       {post.attachments.length > 0 && <div className="attachments">{post.attachments.map((attachment) => attachment.content_type.startsWith('image/') ? <a href={boardApi.attachmentUrl(attachment.id)} target="_blank" rel="noreferrer" key={attachment.id}><img src={boardApi.attachmentUrl(attachment.id)} alt={attachment.file_name} /><small>{attachment.file_name}</small></a> : <a className="pdf" href={boardApi.attachmentUrl(attachment.id)} target="_blank" rel="noreferrer" key={attachment.id}><FileText /><span><b>{attachment.file_name}</b><small>{formatBytes(attachment.byte_size)}</small></span></a>)}</div>}
-      <footer><span>여행 데이터로 옮기기</span><button disabled={post.conversions.some((x) => x.target_type === 'planning')} onClick={() => convert(post, 'planning')}><Plus size={14} />일정 후보</button><button disabled={post.conversions.some((x) => x.target_type === 'place')} onClick={() => convert(post, 'place')}><MapPin size={14} />장소</button><button disabled={post.conversions.some((x) => x.target_type === 'reservation')} onClick={() => convert(post, 'reservation')}><TicketCheck size={14} />예약</button></footer>
+      <footer><span>여행 계획으로 연결</span><button disabled={post.conversions.some((x) => x.target_type === 'planning')} onClick={() => convert(post, 'planning')}><Plus size={14} />일정 후보로 추가</button>{post.kind === 'info' && <button disabled={post.conversions.some((x) => x.target_type === 'reservation')} onClick={() => convert(post, 'reservation')}><TicketCheck size={14} />예약 정보로 추가</button>}</footer>
     </article>)}</div>
     {!loading && posts.length === 0 && <div className="boardEmpty"><Image /><b>아직 공유한 자료가 없어요.</b><span>첫 링크나 파일을 올려보세요.</span></div>}
     {hasMore && <button className="loadMore" disabled={loading} onClick={() => load(page + 1, true)}>{loading ? '불러오는 중…' : '이전 게시물 더 보기'}</button>}
   </section>;
 }
+
+const kindLabel = (kind: BoardPost['kind']) => ({ general: '일반', place: '장소', restaurant: '맛집', cafe: '카페', tour: '투어', info: '예약/정보' })[kind];
