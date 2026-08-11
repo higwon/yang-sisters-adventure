@@ -26,7 +26,7 @@ export function WorkspaceShell({ trip, page, navigate, switchTrip, children }: {
       <footer><button onClick={() => navigate('more')}><Wrench />여행 도구</button><button onClick={() => navigate('more')}><Users />멤버</button><button onClick={() => navigate('more')}><Settings />여행 설정</button></footer>
     </aside>
     <section className="workspaceMain">
-      <header className="workspaceTopbar"><div><small>{trip.country_code} · {trip.default_currency}</small><b>{trip.name}</b></div><time>{trip.start_date} — {trip.end_date}</time></header>
+      <header className="workspaceTopbar"><div><small>{trip.country_code}</small><b>{trip.name}</b></div><time>{trip.start_date} — {trip.end_date}</time></header>
       <main className="content">{page === 'more' ? <MoreMenu navigate={navigate} /> : children}</main>
     </section>
     <nav className="mobileNav">{mobile.map(navButton)}</nav>

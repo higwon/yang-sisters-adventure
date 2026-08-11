@@ -11,7 +11,6 @@ const tripInput = z.object({
   country_code: z.string().trim().length(2).transform((value) => value.toUpperCase()),
   start_date: z.string().date(),
   end_date: z.string().date(),
-  default_currency: z.string().trim().regex(/^[A-Za-z]{3}$/).transform((value) => value.toUpperCase()),
   timezone: z.string().trim().min(1).max(80),
 }).refine((value) => value.end_date >= value.start_date, { message: '종료일은 시작일보다 빠를 수 없습니다.' });
 
@@ -31,12 +30,11 @@ tripsRoutes.get('/', async (c) => {
 
 tripsRoutes.post('/', zValidator('json', tripInput), async (c) => {
   const input = c.req.valid('json');
-  const legacyCurrency = input.default_currency === 'PHP' ? 'PHP' : 'KRW';
   const result = await c.env.DB.prepare(
     `INSERT INTO trips(name, destination, country_code, start_date, end_date, timezone, default_currency, currency_code)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
   ).bind(input.name, input.destination, input.country_code, input.start_date, input.end_date,
-    input.timezone, legacyCurrency, input.default_currency).run();
+    input.timezone, 'KRW', 'KRW').run();
   const tripId = Number(result.meta.last_row_id);
   const days: D1PreparedStatement[] = [
     c.env.DB.prepare("INSERT INTO trip_members(trip_id, user_id, role) VALUES (?, ?, 'owner')").bind(tripId, c.get('userId')),
@@ -52,7 +50,7 @@ tripsRoutes.post('/', zValidator('json', tripInput), async (c) => {
     dayNumber += 1;
   }
   await c.env.DB.batch(days);
-  return c.json({ trip: { id: tripId, ...input, role: 'owner' as const } }, 201);
+  return c.json({ trip: { id: tripId, ...input, default_currency: 'KRW', role: 'owner' as const } }, 201);
 });
 
 tripsRoutes.get('/:tripId/members', async (c) => {

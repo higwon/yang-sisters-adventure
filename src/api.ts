@@ -31,7 +31,7 @@ export interface TripMember extends AuthUser { role: 'owner' | 'member' }
 export const api = {
   setTrip: (tripId: number | null) => { selectedTripId = tripId; },
   trips: () => request<{ trips: TripSummary[] }>('/api/trips'),
-  createTrip: (data: Omit<TripSummary, 'id' | 'role'>) => request<{ trip: TripSummary }>('/api/trips', { method: 'POST', body: JSON.stringify(data) }),
+  createTrip: (data: Omit<TripSummary, 'id' | 'role' | 'default_currency'>) => request<{ trip: TripSummary }>('/api/trips', { method: 'POST', body: JSON.stringify(data) }),
   tripMembers: (tripId: number) => request<{ members: TripMember[]; can_manage: boolean }>(`/api/trips/${tripId}/members`),
   addTripMember: (tripId: number, userId: number) => request<{ ok: boolean }>(`/api/trips/${tripId}/members`, { method: 'POST', body: JSON.stringify({ user_id: userId }) }),
   removeTripMember: (tripId: number, userId: number) => request<{ ok: boolean }>(`/api/trips/${tripId}/members/${userId}`, { method: 'DELETE' }),
@@ -47,7 +47,7 @@ export const api = {
   reorderSchedule: (id: number, direction: 'up' | 'down') => tripRequest<{ ok: boolean }>(`/schedule/${id}/reorder`, { method: 'POST', body: JSON.stringify({ direction }) }),
   places: () => tripRequest<Place[]>('/places'),
   checklist: () => tripRequest<ChecklistItem[]>('/checklist'),
-  expenses: () => tripRequest<Expense[]>('/expenses'),
+  expenses: () => tripRequest<{ expenses: Expense[]; total_minor: number; legacy_count: number }>('/expenses'),
   reservations: () => tripRequest<Array<Reservation & { attachments: Reservation['attachments'] | string }>>('/reservations').then((items) => items.map((item) => ({ ...item, attachments: typeof item.attachments === 'string' ? JSON.parse(item.attachments) : item.attachments }))),
   availableAttachments: () => tripRequest<Array<{ id: number; file_name: string; content_type: string; byte_size: number; post_title: string | null }>>('/attachments'),
   create: <T>(resource: string, data: unknown) => tripRequest<T>(`/${resource}`, { method: 'POST', body: JSON.stringify(data) }),
