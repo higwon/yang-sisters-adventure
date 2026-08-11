@@ -6,7 +6,8 @@ export const dashboardRoutes = new Hono<AppEnv>();
 dashboardRoutes.get('/dashboard', async (c) => {
   const tripId = c.get('tripId');
   const [trip, members, checklist, nextSchedule, recentUpdates] = await Promise.all([
-    c.env.DB.prepare('SELECT * FROM trips WHERE id = ?').bind(tripId).first(),
+    c.env.DB.prepare(`SELECT id, name, destination, country_code, start_date, end_date, timezone,
+      COALESCE(currency_code, default_currency) AS default_currency FROM trips WHERE id = ?`).bind(tripId).first(),
     c.env.DB.prepare(
       `SELECT u.id, u.name, u.email, u.avatar_color, tm.role
        FROM trip_members tm JOIN users u ON u.id = tm.user_id

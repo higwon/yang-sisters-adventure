@@ -10,17 +10,18 @@ const tripInput = z.object({
   country_code: z.string().trim().length(2).transform((value) => value.toUpperCase()),
   start_date: z.string().date(),
   end_date: z.string().date(),
-  default_currency: z.enum(['KRW', 'PHP']),
+  default_currency: z.string().trim().regex(/^[A-Za-z]{3}$/).transform((value) => value.toUpperCase()),
   timezone: z.string().trim().min(1).max(80),
 }).refine((value) => value.end_date >= value.start_date, { message: '종료일은 시작일보다 빠를 수 없습니다.' });
 
-const memberInput = z.object({ identifier: z.string().trim().min(1) });
+const memberInput = z.object({ user_id: z.number().int().positive() });
 export const tripsRoutes = new Hono<AppEnv>();
 tripsRoutes.use('*', requireAuth);
 
 tripsRoutes.get('/', async (c) => {
   const trips = await c.env.DB.prepare(
-    `SELECT t.*, tm.role
+    `SELECT t.id, t.name, t.destination, t.country_code, t.start_date, t.end_date,
+            t.timezone, COALESCE(t.currency_code, t.default_currency) AS default_currency, tm.role
      FROM trip_members tm JOIN trips t ON t.id = tm.trip_id
      WHERE tm.user_id = ? ORDER BY t.start_date DESC, t.id DESC`,
   ).bind(c.get('userId')).all();
@@ -29,10 +30,12 @@ tripsRoutes.get('/', async (c) => {
 
 tripsRoutes.post('/', zValidator('json', tripInput), async (c) => {
   const input = c.req.valid('json');
+  const legacyCurrency = input.default_currency === 'PHP' ? 'PHP' : 'KRW';
   const result = await c.env.DB.prepare(
-    `INSERT INTO trips(name, destination, country_code, start_date, end_date, timezone, default_currency)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-  ).bind(input.name, input.destination, input.country_code, input.start_date, input.end_date, input.timezone, input.default_currency).run();
+    `INSERT INTO trips(name, destination, country_code, start_date, end_date, timezone, default_currency, currency_code)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).bind(input.name, input.destination, input.country_code, input.start_date, input.end_date,
+    input.timezone, legacyCurrency, input.default_currency).run();
   const tripId = Number(result.meta.last_row_id);
   const days: D1PreparedStatement[] = [
     c.env.DB.prepare("INSERT INTO trip_members(trip_id, user_id, role) VALUES (?, ?, 'owner')").bind(tripId, c.get('userId')),
@@ -69,12 +72,15 @@ tripsRoutes.post('/:tripId/members', zValidator('json', memberInput), async (c) 
   const owner = await c.env.DB.prepare("SELECT 1 FROM trip_members WHERE trip_id = ? AND user_id = ? AND role = 'owner'")
     .bind(tripId, c.get('userId')).first();
   if (!owner) return c.json({ error: 'Owner만 멤버를 관리할 수 있습니다.' }, 403);
-  const { identifier } = c.req.valid('json');
+  const { user_id: userId } = c.req.valid('json');
   const user = await c.env.DB.prepare(
-    'SELECT id FROM users WHERE CAST(id AS TEXT) = ? OR lower(email) = lower(?) OR lower(login_identifier) = lower(?)',
-  ).bind(identifier, identifier, identifier).first<{ id: number }>();
+    'SELECT id FROM users WHERE id = ? AND is_active = 1',
+  ).bind(userId).first<{ id: number }>();
   if (!user) return c.json({ error: '사용자를 찾을 수 없습니다.' }, 404);
-  await c.env.DB.prepare("INSERT OR IGNORE INTO trip_members(trip_id, user_id, role) VALUES (?, ?, 'member')")
+  const existing = await c.env.DB.prepare('SELECT 1 FROM trip_members WHERE trip_id = ? AND user_id = ?')
+    .bind(tripId, user.id).first();
+  if (existing) return c.json({ error: '이미 참여 중인 프로필입니다.' }, 409);
+  await c.env.DB.prepare("INSERT INTO trip_members(trip_id, user_id, role) VALUES (?, ?, 'member')")
     .bind(tripId, user.id).run();
   return c.json({ ok: true });
 });

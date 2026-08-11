@@ -7,9 +7,7 @@ import { createSessionToken, hashSessionToken } from '../services/auth';
 import type { AppEnv } from '../types';
 
 const SESSION_SECONDS = 60 * 60 * 24 * 30;
-const fixedProfileSelection = z.object({
-  user_id: z.union([z.literal(1), z.literal(2), z.literal(3)]),
-});
+const profileSelection = z.object({ user_id: z.number().int().positive() });
 
 export const authRoutes = new Hono<AppEnv>();
 
@@ -36,15 +34,15 @@ async function startSession(c: Context<AppEnv>, userId: number) {
 
 authRoutes.get('/profiles', async (c) => {
   const profiles = await c.env.DB.prepare(
-    'SELECT id, name, avatar_color FROM users WHERE id IN (1, 2, 3) ORDER BY id',
-  ).all<{ id: 1 | 2 | 3; name: string; avatar_color: string }>();
+    'SELECT id, name, avatar_color FROM users WHERE is_active = 1 ORDER BY id',
+  ).all<{ id: number; name: string; avatar_color: string }>();
   return c.json({ profiles: profiles.results });
 });
 
-authRoutes.post('/profile', zValidator('json', fixedProfileSelection), async (c) => {
+authRoutes.post('/profile', zValidator('json', profileSelection), async (c) => {
   const { user_id: userId } = c.req.valid('json');
   const user = await c.env.DB.prepare(
-    'SELECT id, name, email, avatar_color FROM users WHERE id = ?',
+    'SELECT id, name, email, avatar_color FROM users WHERE id = ? AND is_active = 1',
   ).bind(userId).first<{ id: number; name: string; email: string; avatar_color: string }>();
   if (!user) return c.json({ error: '선택할 수 없는 프로필입니다.' }, 404);
   await startSession(c, user.id);

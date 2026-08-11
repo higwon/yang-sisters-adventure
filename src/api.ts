@@ -14,7 +14,7 @@ const request = async <T>(url: string, init?: RequestInit): Promise<T> => {
 };
 
 export interface AuthUser { id: number; name: string; email: string; avatar_color: string }
-export interface SelectableProfile { id: 1 | 2 | 3; name: string; avatar_color: string }
+export interface SelectableProfile { id: number; name: string; avatar_color: string }
 const tripRequest = <T>(path: string, init?: RequestInit) => {
   if (selectedTripId === null) throw new Error('여행을 먼저 선택해 주세요.');
   return request<T>(`/api/trips/${selectedTripId}${path}`, init);
@@ -24,7 +24,7 @@ const authRequest = <T>(path: string, init?: RequestInit) => request<T>(`/api/au
 export interface TripSummary {
   id: number; name: string; destination: string; country_code: string;
   start_date: string; end_date: string; timezone: string;
-  default_currency: 'KRW' | 'PHP'; role: 'owner' | 'member';
+  default_currency: string; role: 'owner' | 'member';
 }
 export interface TripMember extends AuthUser { role: 'owner' | 'member' }
 
@@ -33,12 +33,12 @@ export const api = {
   trips: () => request<{ trips: TripSummary[] }>('/api/trips'),
   createTrip: (data: Omit<TripSummary, 'id' | 'role'>) => request<{ trip: TripSummary }>('/api/trips', { method: 'POST', body: JSON.stringify(data) }),
   tripMembers: (tripId: number) => request<{ members: TripMember[]; can_manage: boolean }>(`/api/trips/${tripId}/members`),
-  addTripMember: (tripId: number, identifier: string) => request<{ ok: boolean }>(`/api/trips/${tripId}/members`, { method: 'POST', body: JSON.stringify({ identifier }) }),
+  addTripMember: (tripId: number, userId: number) => request<{ ok: boolean }>(`/api/trips/${tripId}/members`, { method: 'POST', body: JSON.stringify({ user_id: userId }) }),
   removeTripMember: (tripId: number, userId: number) => request<{ ok: boolean }>(`/api/trips/${tripId}/members/${userId}`, { method: 'DELETE' }),
   deleteTrip: (tripId: number) => request<{ ok: boolean }>(`/api/trips/${tripId}`, { method: 'DELETE' }),
   me: () => authRequest<{ user: AuthUser }>('/me'),
   profiles: () => authRequest<{ profiles: SelectableProfile[] }>('/profiles'),
-  selectProfile: (user_id: 1 | 2 | 3) => authRequest<{ user: AuthUser }>('/profile', { method: 'POST', body: JSON.stringify({ user_id }) }),
+  selectProfile: (user_id: number) => authRequest<{ user: AuthUser }>('/profile', { method: 'POST', body: JSON.stringify({ user_id }) }),
   logout: () => authRequest<{ ok: boolean }>('/logout', { method: 'POST' }),
   dashboard: () => tripRequest<Dashboard>('/dashboard'),
   schedule: () => tripRequest<ScheduleItem[]>('/schedule'),
