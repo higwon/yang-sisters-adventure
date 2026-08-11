@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculateSettlements, splitAmountMinor, type Expense } from './domain';
+import { calculateSettlements, currencyMinorDigits, formatMoneyMinor, splitAmountMinor, type Expense } from './domain';
 
 const expense = (paidBy: number, amountMinor: number, shares: [number, number][]): Expense => ({
   id: crypto.randomUUID(), trip_id: 1, title: 'test', amount_minor: amountMinor,
@@ -27,5 +27,13 @@ describe('calculateSettlements', () => {
         { from: 2, to: 1, amount_minor: 3333, currency: 'PHP' },
         { from: 3, to: 1, amount_minor: 3333, currency: 'PHP' },
       ]);
+  });
+});
+
+describe('currency formatting', () => {
+  it('uses ISO currency minor digits', () => {
+    expect(currencyMinorDigits('KRW')).toBe(0);
+    expect(currencyMinorDigits('USD')).toBe(2);
+    expect(formatMoneyMinor(1234, 'USD', 'en-US')).toBe('$12.34');
   });
 });

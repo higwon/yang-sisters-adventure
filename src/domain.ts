@@ -14,6 +14,15 @@ export interface Activity { id: number; actor_id: number; actor_name: string; ac
 export interface Dashboard { trip: Trip; members: Member[]; checklist: { completed: number; total: number }; nextSchedule: ScheduleItem | null; schedulePreview: ScheduleItem[]; activities: Activity[]; planningCount: number; expenseTotals: { currency: string; amount_minor: number }[] }
 export interface Settlement { from: number; to: number; amount_minor: number; currency: Currency }
 
+export function currencyMinorDigits(currency: string) {
+  return new Intl.NumberFormat('en', { style: 'currency', currency }).resolvedOptions().maximumFractionDigits ?? 0;
+}
+
+export function formatMoneyMinor(amountMinor: number, currency: string, locale = 'ko-KR') {
+  const digits = currencyMinorDigits(currency);
+  return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(amountMinor / 10 ** digits);
+}
+
 export function splitAmountMinor(amountMinor: number, participantIds: number[]) {
   if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0) throw new Error('금액이 올바르지 않습니다.');
   const uniqueIds = [...new Set(participantIds)];
