@@ -29,6 +29,8 @@ boardRoutes.get('/posts', async (c) => {
   return c.json({ posts: posts.results, page, has_more: offset + posts.results.length < (count ?? 0), usage_bytes: usage ?? 0 });
 });
 
+boardRoutes.get('/attachments', async (c) => c.json((await c.env.DB.prepare(`SELECT a.id,a.file_name,a.content_type,a.byte_size,p.title post_title FROM attachments a JOIN posts p ON p.id=a.post_id WHERE p.trip_id=? ORDER BY a.created_at DESC LIMIT 100`).bind(c.get('tripId')).all()).results));
+
 boardRoutes.post('/posts', async (c) => {
   const form = await c.req.formData();
   const kind = String(form.get('kind') ?? 'general');
