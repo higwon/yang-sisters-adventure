@@ -1,38 +1,19 @@
 import type { ReactNode } from 'react';
-import { CalendarDays, CheckCircle2, ChevronDown, CircleEllipsis, Home, MessageCircle, Settings, TicketCheck, Users, WalletCards, Wrench } from 'lucide-react';
+import { CalendarDays, ChevronDown, Home, MessageCircle, Settings, WalletCards } from 'lucide-react';
 import type { TripSummary } from '../api';
 import type { WorkspacePage } from '../app/navigation';
+import { useAuth } from '../AuthGate';
+import { UserAvatar } from './UserAvatar';
+import './workspace-shell.css';
 
 type NavItem = { id: WorkspacePage; label: string; icon: typeof Home };
-const primary: NavItem[] = [
+const navigation: NavItem[] = [
   { id: 'home', label: '홈', icon: Home }, { id: 'schedule', label: '일정', icon: CalendarDays },
-  { id: 'board', label: '보드', icon: MessageCircle },
+  { id: 'board', label: '보드', icon: MessageCircle }, { id: 'expenses', label: '비용', icon: WalletCards },
 ];
-const preparation: NavItem[] = [
-  { id: 'info', label: '예약 / 정보', icon: TicketCheck }, { id: 'checklist', label: '체크리스트', icon: CheckCircle2 },
-  { id: 'expenses', label: '비용', icon: WalletCards },
-];
-const mobile: NavItem[] = [...primary, { id: 'more', label: '더보기', icon: CircleEllipsis }];
 
-export function WorkspaceShell({ trip, page, navigate, switchTrip, children }: {
-  trip: TripSummary; page: WorkspacePage; navigate: (page: WorkspacePage) => void; switchTrip: () => void; children: ReactNode;
-}) {
+export function WorkspaceShell({ trip, page, navigate, switchTrip, children }: { trip: TripSummary; page: WorkspacePage; navigate: (page: WorkspacePage) => void; switchTrip: () => void; children: ReactNode }) {
+  const { user } = useAuth();
   const navButton = ({ id, label, icon: Icon }: NavItem) => <button className={page === id ? 'active' : ''} onClick={() => navigate(id)} key={id}><Icon />{label}</button>;
-  return <div className="workspaceShell">
-    <aside className="workspaceSidebar">
-      <header><i>YS</i><b>Yang Sisters<small>Adventure</small></b></header>
-      <button className="tripSwitcher" onClick={switchTrip}><span><small>CURRENT TRIP</small><b>{trip.name}</b><em>{trip.destination}</em></span><ChevronDown /></button>
-      <nav>{primary.map(navButton)}<small>여행 준비</small>{preparation.map(navButton)}</nav>
-      <footer><button onClick={() => navigate('more')}><Wrench />여행 도구</button><button onClick={() => navigate('more')}><Users />멤버</button><button onClick={() => navigate('more')}><Settings />여행 설정</button></footer>
-    </aside>
-    <section className="workspaceMain">
-      <header className="workspaceTopbar"><div><small>{trip.country_code}</small><b>{trip.name}</b></div><time>{trip.start_date} — {trip.end_date}</time></header>
-      <main className="content">{page === 'more' ? <MoreMenu navigate={navigate} /> : children}</main>
-    </section>
-    <nav className="mobileNav">{mobile.map(navButton)}</nav>
-  </div>;
-}
-
-function MoreMenu({ navigate }: { navigate: (page: WorkspacePage) => void }) {
-  return <section className="moreMenu"><header><small>TRAVEL TOOLBOX</small><h2>더보기</h2><p>여행 준비와 관리 기능을 한곳에서 열 수 있어요.</p></header><div>{preparation.map(({ id, label, icon: Icon }) => <button onClick={() => navigate(id)} key={id}><Icon /><span><b>{label}</b><small>열기</small></span></button>)}<button><Wrench /><span><b>여행 도구</b><small>준비 중</small></span></button><button><Users /><span><b>멤버</b><small>여행 선택 화면에서 관리</small></span></button><button><Settings /><span><b>여행 설정</b><small>준비 중</small></span></button></div></section>;
+  return <div className="workspaceShell"><aside className="workspaceSidebar"><header><i>YS</i><b>Yang Sisters<small>Adventure</small></b></header><button className="tripSwitcher" onClick={switchTrip}><span><small>CURRENT TRIP</small><b>{trip.name}</b><em>{trip.destination}</em></span><ChevronDown /></button><nav>{navigation.map(navButton)}</nav><footer><button className={page === 'settings' ? 'active currentUserButton' : 'currentUserButton'} onClick={() => navigate('settings')}><UserAvatar user={user} /><span><b>{user.name}</b><small>내 프로필 · 설정</small></span><Settings /></button></footer></aside><section className="workspaceMain"><header className="workspaceTopbar"><div><small>{trip.country_code}</small><b>{trip.name}</b></div><button className="mobileCurrentUser" onClick={() => navigate('settings')}><UserAvatar user={user} /><span>{user.name}</span></button><time>{trip.start_date} — {trip.end_date}</time></header><main className="content">{children}</main></section><nav className="mobileNav">{navigation.map(navButton)}</nav></div>;
 }

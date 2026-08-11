@@ -15,6 +15,11 @@ const tripInput = z.object({
 }).refine((value) => value.end_date >= value.start_date, { message: '종료일은 시작일보다 빠를 수 없습니다.' });
 
 const memberInput = z.object({ user_id: z.number().int().positive() });
+const tripUpdate = z.object({
+  name: z.string().trim().min(1).max(80), destination: z.string().trim().min(1).max(80),
+  country_code: z.string().trim().length(2).transform((value) => value.toUpperCase()),
+  timezone: z.string().trim().min(1).max(80),
+});
 export const tripsRoutes = new Hono<AppEnv>();
 tripsRoutes.use('*', requireAuth);
 
@@ -53,13 +58,22 @@ tripsRoutes.post('/', zValidator('json', tripInput), async (c) => {
   return c.json({ trip: { id: tripId, ...input, default_currency: 'KRW', role: 'owner' as const } }, 201);
 });
 
+tripsRoutes.patch('/:tripId', zValidator('json', tripUpdate), async (c) => {
+  const tripId = Number(c.req.param('tripId')); const input = c.req.valid('json');
+  const owner = await c.env.DB.prepare("SELECT 1 FROM trip_members WHERE trip_id=? AND user_id=? AND role='owner'").bind(tripId, c.get('userId')).first();
+  if (!owner) return c.json({ error: 'Owner만 여행 설정을 변경할 수 있습니다.' }, 403);
+  await c.env.DB.prepare('UPDATE trips SET name=?,destination=?,country_code=?,timezone=? WHERE id=?')
+    .bind(input.name, input.destination, input.country_code, input.timezone, tripId).run();
+  return c.json({ ok: true });
+});
+
 tripsRoutes.get('/:tripId/members', async (c) => {
   const tripId = Number(c.req.param('tripId'));
   const membership = await c.env.DB.prepare('SELECT role FROM trip_members WHERE trip_id = ? AND user_id = ?')
     .bind(tripId, c.get('userId')).first<{ role: string }>();
   if (!membership) return c.json({ error: '여행을 찾을 수 없습니다.' }, 404);
   const members = await c.env.DB.prepare(
-    `SELECT u.id, u.name, u.email, u.avatar_color, tm.role
+    `SELECT u.id, u.name, u.email, u.avatar_color, u.avatar_key, tm.role
      FROM trip_members tm JOIN users u ON u.id = tm.user_id
      WHERE tm.trip_id = ? ORDER BY CASE tm.role WHEN 'owner' THEN 0 ELSE 1 END, u.id`,
   ).bind(tripId).all();

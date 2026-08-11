@@ -17,7 +17,7 @@ boardRoutes.get('/posts', async (c) => {
   const offset = (page - 1) * limit;
   const tripId = c.get('tripId');
   const [posts, count, usage] = await Promise.all([
-    c.env.DB.prepare(`SELECT p.*,u.name author_name,u.avatar_color,
+    c.env.DB.prepare(`SELECT p.*,u.name author_name,u.avatar_color,u.avatar_key,
       (SELECT json_group_array(json_object('id',a.id,'file_name',a.file_name,'content_type',a.content_type,'byte_size',a.byte_size)) FROM attachments a WHERE a.post_id=p.id) attachments,
       (SELECT json_group_array(json_object('target_type',pc.target_type,'target_id',pc.target_id)) FROM post_conversions pc WHERE pc.post_id=p.id) conversions
       FROM posts p JOIN users u ON u.id=p.author_id WHERE p.trip_id=? ORDER BY p.created_at DESC,p.id DESC LIMIT ? OFFSET ?`)

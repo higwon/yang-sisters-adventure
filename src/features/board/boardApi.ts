@@ -1,7 +1,7 @@
 export interface BoardAttachment { id: number; file_name: string; content_type: string; byte_size: number }
 export interface BoardConversion { target_type: 'planning' | 'place' | 'reservation'; target_id: number }
 export interface BoardPost {
-  id: number; trip_id: number; author_id: number; author_name: string; avatar_color: string;
+  id: number; trip_id: number; author_id: number; author_name: string; avatar_color: string; avatar_key: string | null;
   kind: 'general' | 'place' | 'restaurant' | 'cafe' | 'tour' | 'info'; title: string | null;
   content: string | null; url: string | null; map_url: string | null; created_at: string;
   attachments: BoardAttachment[]; conversions: BoardConversion[];

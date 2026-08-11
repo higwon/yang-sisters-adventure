@@ -6,7 +6,7 @@ export type Bindings = {
 export type Variables = {
   tripId: number;
   userId: number;
-  user: { id: number; name: string; email: string; avatar_color: string };
+  user: { id: number; name: string; email: string; avatar_color: string; avatar_key: string | null };
 };
 
 export type AppEnv = {

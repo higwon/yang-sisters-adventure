@@ -11,10 +11,10 @@ export const requireAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
 
   const sessionId = await hashSessionToken(token);
   const user = await c.env.DB.prepare(
-    `SELECT u.id, u.name, u.email, u.avatar_color
+    `SELECT u.id, u.name, u.email, u.avatar_color, u.avatar_key
      FROM sessions s JOIN users u ON u.id = s.user_id
      WHERE s.id = ? AND s.expires_at > datetime('now') AND u.is_active = 1`,
-  ).bind(sessionId).first<{ id: number; name: string; email: string; avatar_color: string }>();
+  ).bind(sessionId).first<{ id: number; name: string; email: string; avatar_color: string; avatar_key: string | null }>();
 
   if (!user) return c.json({ error: '세션이 만료되었습니다.' }, 401);
   c.set('userId', user.id);

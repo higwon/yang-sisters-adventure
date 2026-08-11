@@ -1,0 +1,1 @@
+.userAvatar{position:relative;display:grid;place-items:center;flex:0 0 auto;width:34px;height:34px;overflow:hidden;border-radius:50%;color:#fff;font-size:13px;font-weight:800}.userAvatar img{position:absolute;z-index:2;width:100%;height:100%;object-fit:cover}.userAvatar i{font-style:normal}
