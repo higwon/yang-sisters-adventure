@@ -4,6 +4,10 @@ import { z } from 'zod';
 import type { AppEnv } from '../types';
 
 export const reservationRoutes = new Hono<AppEnv>();
+export function validReservationPeriod(value: { start_at?: string | null; end_at?: string | null }) {
+  return !value.start_at || !value.end_at || value.end_at >= value.start_at;
+}
+
 const schema = z.object({
   title: z.string().trim().min(1), type: z.string().trim().min(1),
   reservation_date: z.string().date().nullable().optional(),
@@ -12,6 +16,7 @@ const schema = z.object({
   confirmation_number: z.string().nullable().optional(), link: z.string().url().nullable().optional(),
   notes: z.string().nullable().optional(), attachment_ids: z.array(z.number().int().positive()).default([]),
 });
+const createSchema = schema.refine(validReservationPeriod, { message: '종료 일시는 시작 일시보다 빠를 수 없습니다.' });
 
 async function validAttachments(db: D1Database, tripId: number, ids: number[]) {
   const unique = [...new Set(ids)];
@@ -27,7 +32,7 @@ reservationRoutes.get('/reservations', async (c) => c.json((await c.env.DB.prepa
    FROM reservations r WHERE r.trip_id=? ORDER BY COALESCE(r.start_at,r.reservation_date),r.id`,
 ).bind(c.get('tripId')).all()).results));
 
-reservationRoutes.post('/reservations', zValidator('json', schema), async (c) => {
+reservationRoutes.post('/reservations', zValidator('json', createSchema), async (c) => {
   const tripId=c.get('tripId');const x=c.req.valid('json');
   try { const attachmentIds=await validAttachments(c.env.DB,tripId,x.attachment_ids);const row=await c.env.DB.prepare(
     `INSERT INTO reservations(trip_id,title,type,reservation_date,start_at,end_at,confirmation_number,link,notes) VALUES(?,?,?,?,?,?,?,?,?) RETURNING *`,
@@ -41,6 +46,7 @@ reservationRoutes.patch('/reservations/:id', zValidator('json', schema.partial()
     .bind(c.req.param('id'), c.get('tripId')).first<Record<string, unknown>>();
   if (!current) return c.json({ error: '예약 정보를 찾을 수 없습니다.' }, 404);
   const data=c.req.valid('json');const x={...current,...data};
+  if (!validReservationPeriod(x as { start_at?: string | null; end_at?: string | null })) return c.json({ error: '종료 일시는 시작 일시보다 빠를 수 없습니다.' }, 400);
   try{const attachmentIds=data.attachment_ids===undefined?null:await validAttachments(c.env.DB,c.get('tripId'),data.attachment_ids);const row=await c.env.DB.prepare(
     `UPDATE reservations SET title=?,type=?,reservation_date=?,start_at=?,end_at=?,confirmation_number=?,link=?,notes=? WHERE id=? AND trip_id=? RETURNING *`,
   ).bind(x.title,x.type,x.reservation_date??(String(x.start_at??'').slice(0,10)||null),x.start_at??null,x.end_at??null,x.confirmation_number??null,x.link??null,x.notes??null,c.req.param('id'),c.get('tripId')).first();
