@@ -3,7 +3,8 @@ export interface User { id: number; name: string; email: string; avatar_color: s
 export interface Trip { id: number; name: string; destination: string; country_code: string; start_date: string; end_date: string; timezone: string }
 export interface Member extends User { role: 'owner' | 'member' }
 export interface Place { id: number; trip_id: number; name: string; category: string; address: string | null; map_url: string | null; website_url: string | null; notes: string | null; is_must_visit: number }
-export interface ScheduleItem { id: number; trip_id: number; trip_day_id: number; day_date: string; day_number: number; title: string; start_time: string | null; end_time: string | null; category: string; notes: string | null; place_id: number | null; place_name: string | null; status: 'confirmed' | 'candidate' }
+export interface ScheduleParticipant { id: number; name: string; avatar_color: string }
+export interface ScheduleItem { id: number; trip_id: number; trip_day_id: number; day_date: string; day_number: number; title: string; start_time: string | null; end_time: string | null; category: string; notes: string | null; url: string | null; sort_order: number; place_id: number | null; place_name: string | null; status: 'confirmed' | 'candidate'; participants: ScheduleParticipant[] }
 export interface ChecklistItem { id: number; trip_id: number; title: string; is_completed: number; assignee_id: number | null; assignee_name: string | null; due_date: string | null; category: string; notes: string | null }
 export interface Reservation { id: number; trip_id: number; title: string; type: string; reservation_date: string | null; confirmation_number: string | null; link: string | null; notes: string | null }
 export interface ExpenseParticipant { user_id: number; name: string; share_amount_minor: number }
