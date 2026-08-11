@@ -10,7 +10,8 @@ export interface ChecklistItem { id: number; trip_id: number; title: string; is_
 export interface Reservation { id: number; trip_id: number; title: string; type: string; reservation_date: string | null; confirmation_number: string | null; link: string | null; notes: string | null }
 export interface ExpenseParticipant { user_id: number; name: string; share_amount_minor: number }
 export interface Expense { id: string; trip_id: number; title: string; amount_minor: number; currency: Currency; paid_by: number; payer_name: string; expense_date: string; category: string; notes: string | null; participants: ExpenseParticipant[] }
-export interface Dashboard { trip: Trip; members: Member[]; checklist: { completed: number; total: number }; nextSchedule: ScheduleItem | null; recentUpdates: { text: string; at: string }[] }
+export interface Activity { id: number; actor_id: number; actor_name: string; actor_color: string; action: 'create' | 'update' | 'delete'; entity_type: string; entity_id: string | null; summary: string; created_at: string }
+export interface Dashboard { trip: Trip; members: Member[]; checklist: { completed: number; total: number }; nextSchedule: ScheduleItem | null; schedulePreview: ScheduleItem[]; activities: Activity[]; planningCount: number; expenseTotals: { currency: string; amount_minor: number }[] }
 export interface Settlement { from: number; to: number; amount_minor: number; currency: Currency }
 
 export function splitAmountMinor(amountMinor: number, participantIds: number[]) {

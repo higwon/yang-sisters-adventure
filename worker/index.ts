@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { activityMiddleware } from './services/activity';
 import { requireAuth } from './middleware/auth';
 import { tripContext } from './middleware/trip-context';
 import { authRoutes } from './routes/auth';
@@ -26,6 +27,7 @@ app.route('/api/trips', tripsRoutes);
 const tripRoutes = new Hono<AppEnv>();
 tripRoutes.use('*', requireAuth);
 tripRoutes.use('*', tripContext);
+tripRoutes.use('*', activityMiddleware);
 tripRoutes.route('/', dashboardRoutes);
 tripRoutes.route('/', boardRoutes);
 tripRoutes.route('/', scheduleRoutes);

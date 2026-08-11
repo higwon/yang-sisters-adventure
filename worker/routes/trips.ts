@@ -2,6 +2,7 @@ import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth';
+import { logActivity } from '../services/activity';
 import type { AppEnv } from '../types';
 
 const tripInput = z.object({
@@ -82,6 +83,7 @@ tripsRoutes.post('/:tripId/members', zValidator('json', memberInput), async (c) 
   if (existing) return c.json({ error: '이미 참여 중인 프로필입니다.' }, 409);
   await c.env.DB.prepare("INSERT INTO trip_members(trip_id, user_id, role) VALUES (?, ?, 'member')")
     .bind(tripId, user.id).run();
+  await logActivity(c.env.DB, { tripId, actorId: c.get('userId'), action: 'create', entityType: 'members', entityId: user.id, summary: '여행 멤버를 추가했어요.' });
   return c.json({ ok: true });
 });
 
@@ -96,6 +98,7 @@ tripsRoutes.delete('/:tripId/members/:userId', async (c) => {
   if (!target) return c.json({ error: '멤버를 찾을 수 없습니다.' }, 404);
   if (target.role === 'owner') return c.json({ error: 'Owner는 제거할 수 없습니다.' }, 400);
   await c.env.DB.prepare('DELETE FROM trip_members WHERE trip_id = ? AND user_id = ?').bind(tripId, targetUserId).run();
+  await logActivity(c.env.DB, { tripId, actorId: c.get('userId'), action: 'delete', entityType: 'members', entityId: targetUserId, summary: '여행 멤버를 내보냈어요.' });
   return c.json({ ok: true });
 });
 
