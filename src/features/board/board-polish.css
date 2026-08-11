@@ -1,0 +1,2 @@
+.composerMeta{grid-template-columns:minmax(0,1fr) 140px}.postComposer textarea{border:1px solid #eee5df;border-radius:9px;padding:11px}.postComposer footer .primary{background:#ff6f88}
+@media(max-width:700px){.composerMeta{grid-template-columns:minmax(0,1fr) 112px}.postComposer{gap:9px}.postComposer textarea{min-height:72px}.postComposer footer label{padding:9px}.postComposer footer .primary{margin-left:auto}.postComposer footer>span:empty{display:none}}
