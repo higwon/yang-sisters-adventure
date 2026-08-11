@@ -4,6 +4,7 @@ import { api } from '../api';
 import type { WorkspacePage } from '../app/navigation';
 import { calculateSettlements, type Currency, type Member, type Reservation } from '../domain';
 import { SchedulePage } from './schedule/SchedulePage';
+import { BoardPage } from './board/BoardPage';
 
 const formatDate = (date: string) => new Intl.DateTimeFormat('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' }).format(new Date(`${date}T00:00:00`));
 const minorDigits = (currency: Currency) => currency === 'PHP' ? 2 : 0;
@@ -43,7 +44,7 @@ function ComingSoon({ title, issue }: { title: string; issue: number }) { return
 
 export function WorkspaceContent({ page }: { page: WorkspacePage }) {
   const views: Record<WorkspacePage, ReactNode> = {
-    home: <HomePage />, schedule: <SchedulePage />, map: <PlacesPage />, board: <ComingSoon title="여행 보드" issue={6} />,
+    home: <HomePage />, schedule: <SchedulePage />, map: <PlacesPage />, board: <BoardPage />,
     checklist: <ChecklistPage />, expenses: <ExpensesPage />, info: <InfoPage />, more: <ComingSoon title="여행 도구" issue={3} />,
   };
   return <>{views[page]}</>;

@@ -1,5 +1,6 @@
 export type Bindings = {
   DB: D1Database;
+  ATTACHMENTS: R2Bucket;
 };
 
 export type Variables = {

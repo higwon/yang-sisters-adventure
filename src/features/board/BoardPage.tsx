@@ -1,0 +1,63 @@
+import { useEffect, useRef, useState } from 'react';
+import { ExternalLink, FileText, Image, MapPin, Plus, Send, TicketCheck, Trash2 } from 'lucide-react';
+import { boardApi, type BoardPost } from './boardApi';
+import './board.css';
+
+const formatBytes = (bytes: number) => bytes < 1024 * 1024 ? `${Math.ceil(bytes / 1024)}KB` : `${(bytes / 1024 / 1024).toFixed(1)}MB`;
+
+export function BoardPage() {
+  const [posts, setPosts] = useState<BoardPost[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [usage, setUsage] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [content, setContent] = useState('');
+  const [url, setUrl] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const load = async (nextPage = 1, append = false) => {
+    try {
+      setLoading(true);
+      const result = await boardApi.posts(nextPage);
+      setPosts((current) => append ? [...current, ...result.posts] : result.posts);
+      setPage(nextPage); setHasMore(result.has_more); setUsage(result.usage_bytes); setError('');
+    } catch (reason) { setError(reason instanceof Error ? reason.message : '게시물을 불러오지 못했어요.'); }
+    finally { setLoading(false); }
+  };
+  useEffect(() => { void load(); }, []);
+
+  const publish = async (event: React.FormEvent) => {
+    event.preventDefault();
+    try {
+      await boardApi.createPost({ content, url, files });
+      setContent(''); setUrl(''); setFiles([]); if (inputRef.current) inputRef.current.value = '';
+      await load();
+    } catch (reason) { setError(reason instanceof Error ? reason.message : '게시물을 저장하지 못했어요.'); }
+  };
+
+  const convert = async (post: BoardPost, target: 'planning' | 'place' | 'reservation') => {
+    try { await boardApi.convertPost(post.id, target); await load(); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : '여행 데이터로 전환하지 못했어요.'); }
+  };
+
+  return <section className="boardPage">
+    <header className="boardHeader"><div><small>TRIP BOARD</small><h1>함께 모으는 여행 자료</h1><p>링크와 파일을 공유하고 일정 후보, 장소, 예약 정보로 바로 옮겨보세요.</p></div><aside><b>{formatBytes(usage)} / 2GB</b><span><i style={{ width: `${Math.min(100, usage / (2 * 1024 * 1024 * 1024) * 100)}%` }} /></span><small>앱 저장공간 하드캡</small></aside></header>
+    <form className="postComposer" onSubmit={publish}>
+      <textarea value={content} onChange={(event) => setContent(event.target.value)} placeholder="함께 볼 여행 정보나 메모를 남겨보세요." />
+      <input type="url" value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https:// 공유할 링크 (선택)" />
+      <footer><label><Plus size={16} />파일 추가<input ref={inputRef} type="file" multiple accept="image/jpeg,image/png,image/webp,application/pdf" onChange={(event) => setFiles(Array.from(event.target.files ?? []))} /></label><span>{files.map((file) => file.name).join(', ')}</span><button className="primary"><Send size={16} />게시</button></footer>
+    </form>
+    {error && <p className="boardError">{error}</p>}
+    <div className="postFeed">{posts.map((post) => <article className="postCard" key={post.id}>
+      <header><i style={{ background: post.avatar_color }}>{post.author_name[0]}</i><div><b>{post.author_name}</b><small>{post.created_at.replace('T', ' ').slice(0, 16)}</small></div><button aria-label="게시물 삭제" onClick={async () => { if (confirm('게시물과 첨부파일을 삭제할까요?')) { await boardApi.deletePost(post.id); await load(); } }}><Trash2 size={16} /></button></header>
+      {post.content && <p>{post.content}</p>}
+      {post.url && <a className="sharedUrl" href={post.url} target="_blank" rel="noreferrer"><ExternalLink size={15} />{post.url}</a>}
+      {post.attachments.length > 0 && <div className="attachments">{post.attachments.map((attachment) => attachment.content_type.startsWith('image/') ? <a href={boardApi.attachmentUrl(attachment.id)} target="_blank" rel="noreferrer" key={attachment.id}><img src={boardApi.attachmentUrl(attachment.id)} alt={attachment.file_name} /><small>{attachment.file_name}</small></a> : <a className="pdf" href={boardApi.attachmentUrl(attachment.id)} target="_blank" rel="noreferrer" key={attachment.id}><FileText /><span><b>{attachment.file_name}</b><small>{formatBytes(attachment.byte_size)}</small></span></a>)}</div>}
+      <footer><span>여행 데이터로 옮기기</span><button disabled={post.conversions.some((x) => x.target_type === 'planning')} onClick={() => convert(post, 'planning')}><Plus size={14} />일정 후보</button><button disabled={post.conversions.some((x) => x.target_type === 'place')} onClick={() => convert(post, 'place')}><MapPin size={14} />장소</button><button disabled={post.conversions.some((x) => x.target_type === 'reservation')} onClick={() => convert(post, 'reservation')}><TicketCheck size={14} />예약</button></footer>
+    </article>)}</div>
+    {!loading && posts.length === 0 && <div className="boardEmpty"><Image /><b>아직 공유한 자료가 없어요.</b><span>첫 링크나 파일을 올려보세요.</span></div>}
+    {hasMore && <button className="loadMore" disabled={loading} onClick={() => load(page + 1, true)}>{loading ? '불러오는 중…' : '이전 게시물 더 보기'}</button>}
+  </section>;
+}
