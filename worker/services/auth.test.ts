@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { constantTimeEqual, hashSessionToken } from './auth';
+import { hashSessionToken } from './auth';
 
 describe('authentication primitives', () => {
   it('stores only a hash of the session token', async () => {
@@ -9,8 +9,4 @@ describe('authentication primitives', () => {
     expect(hash).toHaveLength(64);
   });
 
-  it('compares OAuth state hashes without direct secret comparison', () => {
-    expect(constantTimeEqual('same-state', 'same-state')).toBe(true);
-    expect(constantTimeEqual('same-state', 'other-stat')).toBe(false);
-  });
 });

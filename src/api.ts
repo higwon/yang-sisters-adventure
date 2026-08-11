@@ -14,11 +14,14 @@ const request = async <T>(url: string, init?: RequestInit): Promise<T> => {
 };
 
 export interface AuthUser { id: number; name: string; email: string; avatar_color: string }
+export interface SelectableProfile { id: 1 | 2 | 3; name: string; avatar_color: string }
 const tripRequest = <T>(path: string, init?: RequestInit) => request<T>(`/api/trips/${TRIP_ID}${path}`, init);
 const authRequest = <T>(path: string, init?: RequestInit) => request<T>(`/api/auth${path}`, init);
 
 export const api = {
   me: () => authRequest<{ user: AuthUser }>('/me'),
+  profiles: () => authRequest<{ profiles: SelectableProfile[] }>('/profiles'),
+  selectProfile: (user_id: 1 | 2 | 3) => authRequest<{ user: AuthUser }>('/profile', { method: 'POST', body: JSON.stringify({ user_id }) }),
   logout: () => authRequest<{ ok: boolean }>('/logout', { method: 'POST' }),
   dashboard: () => tripRequest<Dashboard>('/dashboard'),
   schedule: () => tripRequest<ScheduleItem[]>('/schedule'),
