@@ -8,6 +8,7 @@ import { expenseRoutes } from './routes/expenses';
 import { placeRoutes } from './routes/places';
 import { reservationRoutes } from './routes/reservations';
 import { scheduleRoutes } from './routes/schedule';
+import { tripsRoutes } from './routes/trips';
 import type { AppEnv } from './types';
 
 const app = new Hono<AppEnv>();
@@ -18,6 +19,7 @@ app.onError((error, c) => {
 });
 
 app.route('/api/auth', authRoutes);
+app.route('/api/trips', tripsRoutes);
 
 const tripRoutes = new Hono<AppEnv>();
 tripRoutes.use('*', requireAuth);

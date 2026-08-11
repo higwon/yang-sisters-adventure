@@ -1,6 +1,6 @@
 import type { ChecklistItem, Dashboard, Expense, Place, Reservation, ScheduleItem } from './domain';
 
-const TRIP_ID = 1;
+let selectedTripId: number | null = null;
 const request = async <T>(url: string, init?: RequestInit): Promise<T> => {
   const response = await fetch(url, {
     ...init,
@@ -15,10 +15,27 @@ const request = async <T>(url: string, init?: RequestInit): Promise<T> => {
 
 export interface AuthUser { id: number; name: string; email: string; avatar_color: string }
 export interface SelectableProfile { id: 1 | 2 | 3; name: string; avatar_color: string }
-const tripRequest = <T>(path: string, init?: RequestInit) => request<T>(`/api/trips/${TRIP_ID}${path}`, init);
+const tripRequest = <T>(path: string, init?: RequestInit) => {
+  if (selectedTripId === null) throw new Error('여행을 먼저 선택해 주세요.');
+  return request<T>(`/api/trips/${selectedTripId}${path}`, init);
+};
 const authRequest = <T>(path: string, init?: RequestInit) => request<T>(`/api/auth${path}`, init);
 
+export interface TripSummary {
+  id: number; name: string; destination: string; country_code: string;
+  start_date: string; end_date: string; timezone: string;
+  default_currency: 'KRW' | 'PHP'; role: 'owner' | 'member';
+}
+export interface TripMember extends AuthUser { role: 'owner' | 'member' }
+
 export const api = {
+  setTrip: (tripId: number | null) => { selectedTripId = tripId; },
+  trips: () => request<{ trips: TripSummary[] }>('/api/trips'),
+  createTrip: (data: Omit<TripSummary, 'id' | 'role'>) => request<{ trip: TripSummary }>('/api/trips', { method: 'POST', body: JSON.stringify(data) }),
+  tripMembers: (tripId: number) => request<{ members: TripMember[]; can_manage: boolean }>(`/api/trips/${tripId}/members`),
+  addTripMember: (tripId: number, identifier: string) => request<{ ok: boolean }>(`/api/trips/${tripId}/members`, { method: 'POST', body: JSON.stringify({ identifier }) }),
+  removeTripMember: (tripId: number, userId: number) => request<{ ok: boolean }>(`/api/trips/${tripId}/members/${userId}`, { method: 'DELETE' }),
+  deleteTrip: (tripId: number) => request<{ ok: boolean }>(`/api/trips/${tripId}`, { method: 'DELETE' }),
   me: () => authRequest<{ user: AuthUser }>('/me'),
   profiles: () => authRequest<{ profiles: SelectableProfile[] }>('/profiles'),
   selectProfile: (user_id: 1 | 2 | 3) => authRequest<{ user: AuthUser }>('/profile', { method: 'POST', body: JSON.stringify({ user_id }) }),
