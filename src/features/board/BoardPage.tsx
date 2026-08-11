@@ -18,6 +18,7 @@ export function BoardPage() {
   const [content, setContent] = useState('');
   const [url, setUrl] = useState('');
   const [files, setFiles] = useState<File[]>([]);
+  const [showOptions, setShowOptions] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const load = async (nextPage = 1, append = false) => {
@@ -35,7 +36,7 @@ export function BoardPage() {
     event.preventDefault();
     try {
       await boardApi.createPost({ kind, title, content, url, files });
-      setKind('general'); setTitle(''); setContent(''); setUrl(''); setFiles([]); if (inputRef.current) inputRef.current.value = '';
+      setKind('general'); setTitle(''); setContent(''); setUrl(''); setFiles([]); setShowOptions(false); if (inputRef.current) inputRef.current.value = '';
       await load();
     } catch (reason) { setError(reason instanceof Error ? reason.message : '게시물을 저장하지 못했어요.'); }
   };
@@ -46,12 +47,11 @@ export function BoardPage() {
   };
 
   return <section className="boardPage">
-    <header className="boardHeader"><div><small>TRIP BOARD</small><h1>함께 모으는 여행 자료</h1><p>링크와 파일을 공유하고 일정 후보, 장소, 예약 정보로 바로 옮겨보세요.</p></div><aside><b>{formatBytes(usage)} / 2GB</b><span><i style={{ width: `${Math.min(100, usage / (2 * 1024 * 1024 * 1024) * 100)}%` }} /></span><small>앱 저장공간 하드캡</small></aside></header>
+    <header className="boardHeader"><div><h1>여행 보드</h1><p>가고 싶은 곳, 맛집, 예약 정보와 링크를 함께 모아보세요.</p></div>{usage >= 1.4 * 1024 * 1024 * 1024 && <aside><b>저장공간을 많이 사용하고 있어요</b><span><i style={{ width: `${Math.min(100, usage / (2 * 1024 * 1024 * 1024) * 100)}%` }} /></span><small>{formatBytes(usage)} 사용 중</small></aside>}</header>
     <form className="postComposer" onSubmit={publish}>
-      <div className="composerMeta"><select value={kind} onChange={(event) => setKind(event.target.value)}><option value="general">일반</option><option value="place">장소</option><option value="restaurant">맛집</option><option value="cafe">카페</option><option value="tour">투어</option><option value="info">예약/정보</option></select><input value={title} onChange={(event) => setTitle(event.target.value)} placeholder={kind === 'general' ? '제목 (선택)' : '장소 또는 정보 이름'} /></div>
-      <textarea value={content} onChange={(event) => setContent(event.target.value)} placeholder="함께 볼 여행 정보나 메모를 남겨보세요." />
-      <input className="composerLink" type="url" value={url} onChange={(event) => setUrl(event.target.value)} placeholder="관련 링크 또는 Google Maps 링크 (선택)" />
-      <footer><label><Plus size={16} />파일 추가<input ref={inputRef} type="file" multiple accept="image/jpeg,image/png,image/webp,application/pdf" onChange={(event) => setFiles(Array.from(event.target.files ?? []))} /></label><span>{files.map((file) => file.name).join(', ')}</span><button className="primary"><Send size={16} />게시</button></footer>
+      <textarea value={content} onFocus={() => setShowOptions(true)} onChange={(event) => setContent(event.target.value)} placeholder="여행 정보를 공유해보세요…" />
+      {showOptions && <><div className="composerMeta"><select value={kind} onChange={(event) => setKind(event.target.value)}><option value="general">일반</option><option value="place">장소</option><option value="restaurant">맛집</option><option value="cafe">카페</option><option value="tour">투어</option><option value="info">예약/정보</option></select><input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="제목 (선택)" /></div><input className="composerLink" type="url" value={url} onChange={(event) => setUrl(event.target.value)} placeholder="관련 링크 (선택)" /></>}
+      <footer><label><Plus size={16} />사진/파일<input ref={inputRef} type="file" multiple accept="image/jpeg,image/png,image/webp,application/pdf" onChange={(event) => { setFiles(Array.from(event.target.files ?? [])); setShowOptions(true); }} /></label><button type="button" className="composerOptions" onClick={() => setShowOptions(!showOptions)}>옵션</button><span>{files.map((file) => file.name).join(', ')}</span><button className="primary"><Send size={16} />게시</button></footer>
     </form>
     {error && <p className="boardError">{error}</p>}
     <div className="postFeed">{posts.map((post) => { const link = post.map_url ?? post.url; const mapLink = link ? isMapLink(link) : false; return <article className="postCard" key={post.id}>

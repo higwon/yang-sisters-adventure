@@ -1,4 +1,4 @@
-import type { Dashboard, Expense, Place, PlanningItem, ScheduleItem } from './domain';
+import type { Dashboard, Expense, PlanningItem, ScheduleItem } from './domain';
 
 let selectedTripId: number | null = null;
 const request = async <T>(url: string, init?: RequestInit): Promise<T> => {
@@ -51,7 +51,6 @@ export const api = {
   planning: () => tripRequest<PlanningItem[]>('/planning'),
   schedulePlanning: (id: number, data: unknown) => tripRequest<{ schedule_item_id: number }>(`/planning/${id}/schedule`, { method: 'POST', body: JSON.stringify(data) }),
   reorderSchedule: (id: number, direction: 'up' | 'down') => tripRequest<{ ok: boolean }>(`/schedule/${id}/reorder`, { method: 'POST', body: JSON.stringify({ direction }) }),
-  places: () => tripRequest<Place[]>('/places'),
   expenses: () => tripRequest<{ expenses: Expense[]; total_minor: number; legacy_count: number }>('/expenses'),
   create: <T>(resource: string, data: unknown) => tripRequest<T>(`/${resource}`, { method: 'POST', body: JSON.stringify(data) }),
   update: <T>(resource: string, id: string | number, data: unknown) => tripRequest<T>(`/${resource}/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
