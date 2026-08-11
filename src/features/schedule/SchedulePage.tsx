@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from 'react';
 import { Clock3, Link, MapPin, Plus, Trash2, Users } from 'lucide-react';
 import { api } from '../../api';
 import { useTrip } from '../../app/TripContext';
@@ -16,20 +16,26 @@ const tripDates = (start: string, end: string) => Array.from({ length: Math.roun
 const minutes = (time: string | null, fallback: number) => time ? Number(time.slice(0, 2)) * 60 + Number(time.slice(3)) : fallback;
 const categoryClass = (category: string) => `tone${Math.abs([...category].reduce((sum, char) => sum + char.charCodeAt(0), 0)) % 5}`;
 
-function Load<T>({ fn, children }: { fn: () => Promise<T>; children: (data: T, reload: () => void) => ReactNode }) {
-  const [data, setData] = useState<T>(); const [error, setError] = useState(''); const [version, setVersion] = useState(0);
-  useEffect(() => { fn().then(setData).catch((reason: Error) => setError(reason.message)); }, [fn, version]);
-  if (error) return <div className="state">{error}<button onClick={() => setVersion(version + 1)}>다시 시도</button></div>;
-  return data ? children(data, () => setVersion(version + 1)) : <div className="state">일정을 불러오는 중…</div>;
-}
-
 type Draft = { item?: ScheduleItem; dayDate: string; startTime?: string };
 
 export function SchedulePage() {
   const trip = useTrip();
-  return <Load fn={api.dashboard}>{(dashboard) => <Load fn={api.schedule}>{(items, reload) => <Load fn={api.planning}>{(planning, reloadPlanning) =>
-    <ScheduleWorkspace tripDates={tripDates(trip.start_date, trip.end_date)} dashboard={dashboard} items={items} planning={planning} reload={reload} reloadPlanning={reloadPlanning} />
-  }</Load>}</Load>}</Load>;
+  const [dashboard, setDashboard] = useState<Dashboard>();
+  const [items, setItems] = useState<ScheduleItem[]>();
+  const [planning, setPlanning] = useState<import('../../domain').PlanningItem[]>();
+  const [error, setError] = useState('');
+  const reloadSchedule = () => { void api.schedule().then(setItems).catch((reason: Error) => setError(reason.message)); };
+  const reloadPlanning = () => { void api.planning().then(setPlanning).catch((reason: Error) => setError(reason.message)); };
+  useEffect(() => {
+    let active = true;
+    Promise.all([api.dashboard(), api.schedule(), api.planning()]).then(([nextDashboard, nextItems, nextPlanning]) => {
+      if (active) { setDashboard(nextDashboard); setItems(nextItems); setPlanning(nextPlanning); }
+    }).catch((reason: Error) => { if (active) setError(reason.message); });
+    return () => { active = false; };
+  }, []);
+  if (error) return <div className="state">{error}<button onClick={() => window.location.reload()}>다시 시도</button></div>;
+  if (!dashboard || !items || !planning) return <div className="state">일정을 불러오는 중…</div>;
+  return <ScheduleWorkspace tripDates={tripDates(trip.start_date, trip.end_date)} dashboard={dashboard} items={items} planning={planning} reload={reloadSchedule} reloadPlanning={reloadPlanning} />;
 }
 
 function ScheduleWorkspace({ tripDates: dates, dashboard, items, planning, reload, reloadPlanning }: { tripDates: string[]; dashboard: Dashboard; items: ScheduleItem[]; planning: import('../../domain').PlanningItem[]; reload: () => void; reloadPlanning: () => void }) {
