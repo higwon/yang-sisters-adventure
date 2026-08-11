@@ -1,6 +1,8 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Plus, Settings, Trash2, Users } from 'lucide-react';
 import { api, type SelectableProfile, type TripMember, type TripSummary } from './api';
+import { navigateToTrip, navigateToTrips, readWorkspacePath } from './app/navigation';
+import { TripProvider } from './app/TripContext';
 
 export function WorkspaceGate({ children }: { children: ReactNode }) {
   const [trips, setTrips] = useState<TripSummary[]>();
@@ -9,9 +11,22 @@ export function WorkspaceGate({ children }: { children: ReactNode }) {
   const [managing, setManaging] = useState<TripSummary>();
   const [error, setError] = useState('');
   const reload = () => api.trips().then(({ trips: rows }) => setTrips(rows)).catch((reason: Error) => setError(reason.message));
-  const openTrip = (trip: TripSummary) => { api.setTrip(trip.id); setSelected(trip); };
+  const openTrip = (trip: TripSummary) => { api.setTrip(trip.id); setSelected(trip); navigateToTrip(trip.id); };
   useEffect(() => { reload(); }, []);
-  if (selected) return <><button className="workspaceSwitch" onClick={() => { api.setTrip(null); setSelected(undefined); }}>여행 변경</button>{children}</>;
+  useEffect(() => {
+    if (!trips) return;
+    const syncPath = () => {
+      const route = readWorkspacePath();
+      const trip = route ? trips.find((item) => item.id === route.tripId) : undefined;
+      api.setTrip(trip?.id ?? null);
+      setSelected(trip);
+      if (route && !trip) navigateToTrips(true);
+    };
+    syncPath();
+    window.addEventListener('popstate', syncPath);
+    return () => window.removeEventListener('popstate', syncPath);
+  }, [trips]);
+  if (selected) return <TripProvider value={selected}>{children}</TripProvider>;
   if (!trips) return <div className="workspacePage"><p>내 여행을 불러오고 있어요…</p></div>;
   return <main className="workspacePage"><section className="workspaceChooser"><header><div><small>YANG SISTERS ADVENTURE</small><h1>내 여행</h1><p>함께 준비할 여행을 선택하세요.</p></div><button className="primary" onClick={() => setCreating(true)}><Plus />새 여행</button></header>{error && <p className="errorText">{error}</p>}<div className="tripGrid">{trips.map((trip) => <article key={trip.id}><button className="tripSelect" onClick={() => openTrip(trip)}><small>{trip.role === 'owner' ? 'OWNER' : 'MEMBER'}</small><h2>{trip.name}</h2><p>{trip.destination}</p><time>{trip.start_date} — {trip.end_date}</time></button>{trip.role === 'owner' && <button className="tripManage" onClick={() => setManaging(trip)}><Settings size={16} />멤버 관리</button>}</article>)}</div>{trips.length === 0 && <div className="emptyWorkspace"><h2>아직 여행이 없어요</h2><p>새 여행을 만들거나 Owner에게 멤버 추가를 요청하세요.</p></div>}{creating && <CreateTrip close={() => setCreating(false)} done={(trip) => { setTrips([trip, ...trips]); setCreating(false); openTrip(trip); }} />}{managing && <MemberManager trip={managing} close={() => setManaging(undefined)} deleted={() => { setTrips(trips.filter((trip) => trip.id !== managing.id)); setManaging(undefined); }} />}</section></main>;
 }
