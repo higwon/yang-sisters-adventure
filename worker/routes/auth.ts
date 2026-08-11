@@ -88,7 +88,7 @@ authRoutes.delete('/me/avatar', requireAuth, async (c) => {
   return c.json({ ok: true });
 });
 
-authRoutes.get('/profiles/:id/avatar', requireAuth, async (c) => {
+authRoutes.get('/profiles/:id/avatar', async (c) => {
   const profile = await c.env.DB.prepare('SELECT avatar_key FROM users WHERE id=? AND is_active=1').bind(c.req.param('id')).first<{ avatar_key: string | null }>();
   if (!profile?.avatar_key) return c.notFound();
   const object = await c.env.ATTACHMENTS.get(profile.avatar_key);
