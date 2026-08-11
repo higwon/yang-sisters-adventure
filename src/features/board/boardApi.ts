@@ -29,13 +29,12 @@ export const boardApi = {
       conversions: typeof post.conversions === 'string' ? JSON.parse(post.conversions) as BoardConversion[] : post.conversions,
     })) };
   },
-  createPost: async (data: { kind: string; title: string; content: string; url: string; map_url: string; files: File[] }) => {
+  createPost: async (data: { kind: string; title: string; content: string; url: string; files: File[] }) => {
     const form = new FormData();
     form.set('kind', data.kind);
     if (data.title.trim()) form.set('title', data.title.trim());
     if (data.content.trim()) form.set('content', data.content.trim());
     if (data.url.trim()) form.set('url', data.url.trim());
-    if (data.map_url.trim()) form.set('map_url', data.map_url.trim());
     data.files.forEach((file) => form.append('files', file));
     return response<{ id: number }>(await fetch(`${base()}/posts`, { method: 'POST', body: form }));
   },
