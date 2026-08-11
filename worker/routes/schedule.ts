@@ -67,3 +67,14 @@ scheduleRoutes.delete('/schedule/:id', async (c) => {
   const result = await c.env.DB.prepare('DELETE FROM schedule_items WHERE id=? AND trip_id=?').bind(c.req.param('id'), c.get('tripId')).run();
   return c.json({ ok: result.meta.changes > 0 });
 });
+
+scheduleRoutes.post('/schedule/:id/reorder', zValidator('json', z.object({ direction: z.enum(['up', 'down']) })), async (c) => {
+  const tripId = c.get('tripId'); const id = Number(c.req.param('id')); const { direction } = c.req.valid('json');
+  const item = await c.env.DB.prepare('SELECT id,trip_day_id,start_time,sort_order FROM schedule_items WHERE id=? AND trip_id=?').bind(id, tripId).first<{id:number;trip_day_id:number;start_time:string|null;sort_order:number}>();
+  if (!item) return c.json({ error: '일정을 찾을 수 없습니다.' }, 404);
+  const operator = direction === 'up' ? '<' : '>'; const ordering = direction === 'up' ? 'DESC' : 'ASC';
+  const neighbor = await c.env.DB.prepare(`SELECT id,sort_order FROM schedule_items WHERE trip_id=? AND trip_day_id=? AND start_time IS ? AND sort_order ${operator} ? ORDER BY sort_order ${ordering},id ${ordering} LIMIT 1`).bind(tripId,item.trip_day_id,item.start_time,item.sort_order).first<{id:number;sort_order:number}>();
+  if (!neighbor) return c.json({ ok: true });
+  await c.env.DB.batch([c.env.DB.prepare('UPDATE schedule_items SET sort_order=? WHERE id=? AND trip_id=?').bind(neighbor.sort_order,item.id,tripId),c.env.DB.prepare('UPDATE schedule_items SET sort_order=? WHERE id=? AND trip_id=?').bind(item.sort_order,neighbor.id,tripId)]);
+  return c.json({ ok: true });
+});

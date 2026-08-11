@@ -1,4 +1,4 @@
-import type { ChecklistItem, Dashboard, Expense, Place, Reservation, ScheduleItem } from './domain';
+import type { ChecklistItem, Dashboard, Expense, Place, PlanningItem, Reservation, ScheduleItem } from './domain';
 
 let selectedTripId: number | null = null;
 const request = async <T>(url: string, init?: RequestInit): Promise<T> => {
@@ -42,6 +42,9 @@ export const api = {
   logout: () => authRequest<{ ok: boolean }>('/logout', { method: 'POST' }),
   dashboard: () => tripRequest<Dashboard>('/dashboard'),
   schedule: () => tripRequest<ScheduleItem[]>('/schedule'),
+  planning: () => tripRequest<PlanningItem[]>('/planning'),
+  schedulePlanning: (id: number, data: unknown) => tripRequest<{ schedule_item_id: number }>(`/planning/${id}/schedule`, { method: 'POST', body: JSON.stringify(data) }),
+  reorderSchedule: (id: number, direction: 'up' | 'down') => tripRequest<{ ok: boolean }>(`/schedule/${id}/reorder`, { method: 'POST', body: JSON.stringify({ direction }) }),
   places: () => tripRequest<Place[]>('/places'),
   checklist: () => tripRequest<ChecklistItem[]>('/checklist'),
   expenses: () => tripRequest<Expense[]>('/expenses'),
