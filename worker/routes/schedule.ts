@@ -9,6 +9,7 @@ const schema = z.object({
   title: z.string().trim().min(1), day_date: z.string().date(),
   start_time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable().optional(),
   end_time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable().optional(),
+  end_next_day: z.boolean().default(false),
   place_id: z.number().int().positive().nullable().optional(), category: z.string().trim().min(1),
   notes: z.string().trim().nullable().optional(), url: z.string().url().nullable().optional(),
   status: z.enum(['confirmed', 'candidate']).default('confirmed'),
@@ -40,7 +41,7 @@ scheduleRoutes.post('/schedule', zValidator('json', schema), async (c) => {
   try {
     const refs = await references(c.env.DB, tripId, data.day_date, data.place_id, data.participant_ids);
     const order = data.sort_order ?? await c.env.DB.prepare('SELECT COALESCE(MAX(sort_order),-1)+1 value FROM schedule_items WHERE trip_day_id=?').bind(refs.dayId).first<number>('value') ?? 0;
-    const row = await c.env.DB.prepare(`INSERT INTO schedule_items(trip_id,trip_day_id,place_id,title,start_time,end_time,category,notes,status,url,sort_order) VALUES(?,?,?,?,?,?,?,?,?,?,?) RETURNING *`).bind(tripId, refs.dayId, data.place_id ?? null, data.title, data.start_time ?? null, data.end_time ?? null, data.category, data.notes ?? null, data.status, data.url ?? null, order).first<Row>();
+    const row = await c.env.DB.prepare(`INSERT INTO schedule_items(trip_id,trip_day_id,place_id,title,start_time,end_time,end_next_day,category,notes,status,url,sort_order) VALUES(?,?,?,?,?,?,?,?,?,?,?,?) RETURNING *`).bind(tripId, refs.dayId, data.place_id ?? null, data.title, data.start_time ?? null, data.end_time ?? null, data.end_next_day ? 1 : 0, data.category, data.notes ?? null, data.status, data.url ?? null, order).first<Row>();
     if (!row) throw new Error('일정을 저장하지 못했습니다.');
     if (refs.participantIds.length) await c.env.DB.batch(refs.participantIds.map((userId) => c.env.DB.prepare('INSERT INTO schedule_participants(schedule_item_id,user_id) VALUES(?,?)').bind(row.id, userId)));
     return c.json((await withParticipants(c.env.DB, [row]))[0], 201);
@@ -56,7 +57,7 @@ scheduleRoutes.patch('/schedule/:id', zValidator('json', schema.partial()), asyn
     const existingPeople = data.participant_ids === undefined ? await c.env.DB.prepare('SELECT user_id FROM schedule_participants WHERE schedule_item_id=?').bind(id).all<{ user_id: number }>() : null;
     const participantIds = data.participant_ids ?? existingPeople?.results.map((row) => row.user_id) ?? [];
     const refs = await references(c.env.DB, tripId, String(merged.day_date), merged.place_id as number | null, participantIds);
-    const row = await c.env.DB.prepare(`UPDATE schedule_items SET trip_day_id=?,place_id=?,title=?,start_time=?,end_time=?,category=?,notes=?,status=?,url=?,sort_order=? WHERE id=? AND trip_id=? RETURNING *`).bind(refs.dayId, merged.place_id ?? null, merged.title, merged.start_time ?? null, merged.end_time ?? null, merged.category, merged.notes ?? null, merged.status, merged.url ?? null, merged.sort_order ?? 0, id, tripId).first<Row>();
+    const row = await c.env.DB.prepare(`UPDATE schedule_items SET trip_day_id=?,place_id=?,title=?,start_time=?,end_time=?,end_next_day=?,category=?,notes=?,status=?,url=?,sort_order=? WHERE id=? AND trip_id=? RETURNING *`).bind(refs.dayId, merged.place_id ?? null, merged.title, merged.start_time ?? null, merged.end_time ?? null, merged.end_next_day ? 1 : 0, merged.category, merged.notes ?? null, merged.status, merged.url ?? null, merged.sort_order ?? 0, id, tripId).first<Row>();
     if (!row) return c.json({ error: '일정을 찾을 수 없습니다.' }, 404);
     if (data.participant_ids !== undefined) await c.env.DB.batch([c.env.DB.prepare('DELETE FROM schedule_participants WHERE schedule_item_id=?').bind(id), ...refs.participantIds.map((userId) => c.env.DB.prepare('INSERT INTO schedule_participants(schedule_item_id,user_id) VALUES(?,?)').bind(id, userId))]);
     return c.json((await withParticipants(c.env.DB, [row]))[0]);

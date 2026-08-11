@@ -1,0 +1,1 @@
+.timeParts{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:7px}.timeParts b{text-align:center}.timeParts select{font-variant-numeric:tabular-nums}@media(max-width:400px){.timeParts{gap:4px}}
