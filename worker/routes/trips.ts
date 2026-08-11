@@ -5,20 +5,22 @@ import { requireAuth } from '../middleware/auth';
 import { logActivity } from '../services/activity';
 import type { AppEnv } from '../types';
 
+const countryCode = z.union([z.literal(''), z.string().trim().length(2)]).transform((value) => value.toUpperCase());
+
 const tripInput = z.object({
   name: z.string().trim().min(1).max(80),
   destination: z.string().trim().min(1).max(80),
-  country_code: z.string().trim().length(2).transform((value) => value.toUpperCase()),
+  country_code: countryCode.optional().default(''),
   start_date: z.string().date(),
   end_date: z.string().date(),
-  timezone: z.string().trim().min(1).max(80),
+  timezone: z.string().trim().max(80).optional().default(''),
 }).refine((value) => value.end_date >= value.start_date, { message: '종료일은 시작일보다 빠를 수 없습니다.' });
 
 const memberInput = z.object({ user_id: z.number().int().positive() });
 const tripUpdate = z.object({
   name: z.string().trim().min(1).max(80), destination: z.string().trim().min(1).max(80),
-  country_code: z.string().trim().length(2).transform((value) => value.toUpperCase()),
-  timezone: z.string().trim().min(1).max(80),
+  country_code: countryCode,
+  timezone: z.string().trim().max(80),
 });
 export const tripsRoutes = new Hono<AppEnv>();
 tripsRoutes.use('*', requireAuth);

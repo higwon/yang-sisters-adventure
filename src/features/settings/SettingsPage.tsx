@@ -14,6 +14,15 @@ export function SettingsPage() {
   const loadMembers = () => Promise.all([api.tripMembers(trip.id), api.profiles()]).then(([a, b]) => { setMembers(a.members); setProfiles(b.profiles); });
   useEffect(() => { void loadMembers(); }, [trip.id]);
   const owner = trip.role === 'owner';
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 700px)');
+    const syncDisclosure = (event: MediaQueryListEvent) => {
+      setTripOpen(!event.matches);
+      setMembersOpen(!event.matches);
+    };
+    media.addEventListener('change', syncDisclosure);
+    return () => media.removeEventListener('change', syncDisclosure);
+  }, []);
   const updateProfile = async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); setError(''); try { const values = new FormData(event.currentTarget); await api.updateMe(String(values.get('name'))); await refreshUser(); setMessage('프로필을 저장했어요.'); } catch (reason) { setError(reason instanceof Error ? reason.message : '저장하지 못했어요.'); } };
   const updateTrip = async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); setError(''); try { const values = Object.fromEntries(new FormData(event.currentTarget)); const changes = { name: String(values.name), destination: String(values.destination), country_code: String(values.country_code).toUpperCase(), timezone: String(values.timezone) }; await api.updateTrip(trip.id, changes); trip.updateCurrentTrip(changes); setMessage('여행 설정을 저장했어요.'); } catch (reason) { setError(reason instanceof Error ? reason.message : '저장하지 못했어요.'); } };
   return <section className="settingsPage"><header><h1>설정</h1><p>프로필과 이 여행에 필요한 정보만 관리해요.</p></header>{message && <p className="settingsMessage">{message}</p>}{error && <p className="errorText">{error}</p>}
