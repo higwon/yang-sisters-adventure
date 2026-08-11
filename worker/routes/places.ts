@@ -7,7 +7,9 @@ export const placeRoutes = new Hono<AppEnv>();
 const schema = z.object({
   name: z.string().trim().min(1), category: z.string().trim().min(1),
   address: z.string().nullable().optional(), map_url: z.string().url().nullable().optional(),
-  website_url: z.string().url().nullable().optional(), notes: z.string().nullable().optional(),
+  website_url: z.string().url().nullable().optional(), photo_url: z.string().url().nullable().optional(),
+  latitude: z.number().min(-90).max(90).nullable().optional(), longitude: z.number().min(-180).max(180).nullable().optional(),
+  notes: z.string().nullable().optional(),
   is_must_visit: z.number().int().min(0).max(1).default(0),
 });
 
@@ -18,10 +20,11 @@ placeRoutes.get('/places', async (c) => c.json((await c.env.DB.prepare(
 placeRoutes.post('/places', zValidator('json', schema), async (c) => {
   const x = c.req.valid('json');
   return c.json(await c.env.DB.prepare(
-    `INSERT INTO places(trip_id,name,category,address,map_url,website_url,notes,is_must_visit)
-     VALUES(?,?,?,?,?,?,?,?) RETURNING *`,
+    `INSERT INTO places(trip_id,name,category,address,map_url,website_url,photo_url,latitude,longitude,notes,is_must_visit)
+     VALUES(?,?,?,?,?,?,?,?,?,?,?) RETURNING *`,
   ).bind(c.get('tripId'), x.name, x.category, x.address ?? null, x.map_url ?? null,
-    x.website_url ?? null, x.notes ?? null, x.is_must_visit).first(), 201);
+    x.website_url ?? null, x.photo_url ?? null, x.latitude ?? null, x.longitude ?? null,
+    x.notes ?? null, x.is_must_visit).first(), 201);
 });
 
 placeRoutes.patch('/places/:id', zValidator('json', schema.partial()), async (c) => {
@@ -30,10 +33,11 @@ placeRoutes.patch('/places/:id', zValidator('json', schema.partial()), async (c)
   if (!current) return c.json({ error: '장소를 찾을 수 없습니다.' }, 404);
   const x = { ...current, ...c.req.valid('json') };
   return c.json(await c.env.DB.prepare(
-    `UPDATE places SET name=?,category=?,address=?,map_url=?,website_url=?,notes=?,is_must_visit=?
+    `UPDATE places SET name=?,category=?,address=?,map_url=?,website_url=?,photo_url=?,latitude=?,longitude=?,notes=?,is_must_visit=?
      WHERE id=? AND trip_id=? RETURNING *`,
   ).bind(x.name, x.category, x.address ?? null, x.map_url ?? null, x.website_url ?? null,
-    x.notes ?? null, x.is_must_visit, c.req.param('id'), c.get('tripId')).first());
+    x.photo_url ?? null, x.latitude ?? null, x.longitude ?? null, x.notes ?? null,
+    x.is_must_visit, c.req.param('id'), c.get('tripId')).first());
 });
 
 placeRoutes.delete('/places/:id', async (c) => c.json({ ok: (await c.env.DB.prepare(

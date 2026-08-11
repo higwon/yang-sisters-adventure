@@ -2,7 +2,7 @@ export type Currency = 'KRW' | 'PHP';
 export interface User { id: number; name: string; email: string; avatar_color: string }
 export interface Trip { id: number; name: string; destination: string; country_code: string; start_date: string; end_date: string; timezone: string }
 export interface Member extends User { role: 'owner' | 'member' }
-export interface Place { id: number; trip_id: number; name: string; category: string; address: string | null; map_url: string | null; website_url: string | null; notes: string | null; is_must_visit: number }
+export interface Place { id: number; trip_id: number; name: string; category: string; address: string | null; map_url: string | null; website_url: string | null; photo_url: string | null; latitude: number | null; longitude: number | null; notes: string | null; is_must_visit: number }
 export interface ScheduleParticipant { id: number; name: string; avatar_color: string }
 export interface ScheduleItem { id: number; trip_id: number; trip_day_id: number; day_date: string; day_number: number; title: string; start_time: string | null; end_time: string | null; category: string; notes: string | null; url: string | null; sort_order: number; place_id: number | null; place_name: string | null; status: 'confirmed' | 'candidate'; participants: ScheduleParticipant[] }
 export interface PlanningItem { id: number; trip_id: number; title: string; item_type: string; place_id: number | null; place_name: string | null; url: string | null; notes: string | null; created_by: number; created_by_name: string; status: 'inbox' | 'scheduled'; schedule_item_id: number | null; created_at: string }

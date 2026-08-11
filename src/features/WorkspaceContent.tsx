@@ -6,6 +6,7 @@ import { calculateSettlements, type Currency, type Member, type Reservation } fr
 import { SchedulePage } from './schedule/SchedulePage';
 import { BoardPage } from './board/BoardPage';
 import { HomePage as CollaborativeHomePage } from './home/HomePage';
+import { MapPage } from './map/MapPage';
 
 const minorDigits = (currency: Currency) => currency === 'PHP' ? 2 : 0;
 const toMinor = (value: string, currency: Currency) => Math.round(Number(value) * 10 ** minorDigits(currency));
@@ -26,7 +27,7 @@ const submit = (resource: string, close: () => void, reload: () => void, map?: (
 
 function HomePage() { return <CollaborativeHomePage />; }
 
-function PlacesPage() { const [open, setOpen] = useState(false); return <Load fn={api.places}>{(items, reload) => <><Heading title="가고 싶은 장소" add={() => setOpen(true)} /><div className="grid">{items.map((item) => <article className="card" key={item.id}><small>{item.category}</small>{item.is_must_visit === 1 && <em>꼭 가기</em>}<h3>{item.name}</h3><p>{item.address}</p>{item.map_url && <a href={item.map_url} target="_blank">지도 보기</a>}<button className="delete" onClick={async () => { if (confirm('장소를 삭제할까요?')) { await api.remove('places', item.id); reload(); } }}><Trash2 size={15} /></button></article>)}</div>{open && <Modal title="장소 추가" close={() => setOpen(false)}><form onSubmit={submit('places', () => setOpen(false), reload, (x) => ({ ...x, is_must_visit: x.is_must_visit ? 1 : 0, map_url: x.map_url || null }))}><Field label="이름" name="name" /><Select label="카테고리" name="category"><option>관광</option><option>맛집</option><option>카페</option><option>쇼핑</option><option>숙소</option></Select><Field label="주소" name="address" required={false} /><Field label="지도 URL" name="map_url" type="url" required={false} /><label className="check"><input name="is_must_visit" type="checkbox" />꼭 가기</label><button className="primary">저장</button></form></Modal>}</>}</Load>; }
+function PlacesPage() { return <MapPage />; }
 
 function ChecklistPage() { const [open, setOpen] = useState(false); return <Load fn={api.dashboard}>{(dashboard) => <Load fn={api.checklist}>{(items, reload) => <><Heading title="여행 준비" add={() => setOpen(true)} /><section className="checks">{items.map((item) => <label className={item.is_completed ? 'done' : ''} key={item.id}><input type="checkbox" checked={Boolean(item.is_completed)} onChange={async (event) => { await api.update('checklist', item.id, { is_completed: event.target.checked ? 1 : 0 }); reload(); }} /><span><b>{item.title}</b><small>{item.assignee_name ?? '담당자 미정'} · {item.due_date ?? '마감일 없음'}</small></span><em>{item.category}</em></label>)}</section>{open && <Modal title="준비 항목 추가" close={() => setOpen(false)}><form onSubmit={submit('checklist', () => setOpen(false), reload, (x) => ({ ...x, assignee_id: x.assignee_id ? Number(x.assignee_id) : null, due_date: x.due_date || null, is_completed: 0 }))}><Field label="할 일" name="title" /><Select label="담당자" name="assignee_id"><option value="">미정</option>{dashboard.members.map((member) => <option value={member.id} key={member.id}>{member.name}</option>)}</Select><Select label="카테고리" name="category"><option>예약</option><option>준비물</option><option>통신</option><option>금융</option></Select><Field label="마감일" name="due_date" type="date" required={false} /><button className="primary">저장</button></form></Modal>}</>}</Load>}</Load>; }
 
