@@ -4,6 +4,11 @@
   opacity: .55;
 }
 
+/* Profile colors identify people; product actions always use the coral brand color. */
+.primary {
+  background: var(--coral);
+}
+
 .primary,
 .expenseAdd,
 .scheduleAdd,
