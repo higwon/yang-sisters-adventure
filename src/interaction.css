@@ -1,0 +1,154 @@
+.postComposer button:disabled,
+.postCard button:disabled {
+  cursor: wait;
+  opacity: .55;
+}
+
+.primary,
+.expenseAdd,
+.scheduleAdd,
+.mobileNav button,
+.workspaceSidebar button {
+  transition: background-color .16s ease, color .16s ease, transform .16s ease, opacity .16s ease;
+}
+
+.primary:active,
+.expenseAdd:active,
+.scheduleAdd:active,
+.mobileNav button:active,
+.workspaceSidebar button:active {
+  transform: scale(.98);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 900px) {
+  .workspaceSidebar { display: none; }
+  .workspaceMain { margin: 0; }
+  .workspaceMain > .workspaceTopbar {
+    display: flex;
+    height: 58px;
+    padding: 0 16px;
+  }
+  .mobileCurrentUser {
+    display: grid;
+    place-items: center;
+    min-width: 44px;
+    min-height: 44px;
+    margin-left: auto;
+  }
+  .workspaceMain > .content { padding: 0 0 88px; }
+  .mobileNav {
+    position: fixed;
+    z-index: 15;
+    inset: auto 0 0;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    padding: 7px 4px env(safe-area-inset-bottom);
+    border-top: 1px solid #eee5df;
+    background: #fffdfb;
+  }
+  .mobileNav button {
+    display: grid;
+    justify-items: center;
+    gap: 2px;
+    min-height: 52px;
+    border: 0;
+    background: transparent;
+    color: #81756f;
+    font-size: 10px;
+  }
+  .mobileNav button.active { color: #ef5875; font-weight: 800; }
+  .scheduleWorkspace {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: none;
+    padding: 24px 22px 96px;
+  }
+  .scheduleHeader { order: 1; align-items: flex-start; }
+  .scheduleHeader .scheduleAdd,
+  .desktopItinerary { display: none; }
+  .mobileDayTabs {
+    order: 2;
+    display: flex;
+    overflow-x: auto;
+    margin: 0 -22px 12px;
+    padding: 0 18px;
+    border-bottom: 1px solid #eee5df;
+    scrollbar-width: none;
+  }
+  .mobileDayTabs button {
+    flex: 0 0 92px;
+    padding: 10px 4px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: #81756f;
+  }
+  .mobileDayTabs b,
+  .mobileDayTabs span { display: block; font-size: 11px; }
+  .mobileDayTabs button.active { border-color: #ef5875; color: #ef5875; }
+  .mobileTimeline { position: relative; order: 3; display: block; }
+  .mobileScheduleItem {
+    display: grid;
+    grid-template-columns: 58px 10px 1fr;
+    gap: 10px;
+    min-height: 100px;
+  }
+  .mobileScheduleItem > time { padding-top: 11px; font-size: 12px; font-weight: 700; }
+  .mobileScheduleItem > i {
+    position: relative;
+    width: 8px;
+    height: 8px;
+    margin-top: 13px;
+    border: 2px solid #ef7187;
+    border-radius: 50%;
+    background: #fff;
+  }
+  .mobileScheduleItem > i::after {
+    position: absolute;
+    top: 7px;
+    left: 1px;
+    width: 1px;
+    height: 88px;
+    background: #eadfd9;
+    content: '';
+  }
+  .mobileScheduleItem > button {
+    display: grid;
+    gap: 4px;
+    margin-bottom: 13px;
+    padding: 13px;
+    border: 0;
+    border-radius: 10px;
+    text-align: left;
+    color: #342d29;
+  }
+  .mobileScheduleItem small { font-size: 10px; opacity: .7; }
+  .mobileScheduleItem span { display: flex; align-items: center; gap: 4px; color: #6f6560; font-size: 11px; }
+  .mobileScheduleItem svg { width: 12px; }
+  .floatingAdd {
+    position: fixed;
+    z-index: 8;
+    right: 24px;
+    bottom: 76px;
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border: 0;
+    border-radius: 50%;
+    background: #ff6f88;
+    color: #fff;
+    box-shadow: 0 8px 20px #d94d6840;
+  }
+  .scheduleDesktopLayout { order: 4; display: block; }
+  .scheduleDesktopLayout > .planningInbox { position: static; display: block; margin-top: 20px; }
+  .planningBody { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}

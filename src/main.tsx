@@ -5,5 +5,6 @@ import { AuthGate } from './AuthGate';
 import { WorkspaceGate } from './WorkspaceGate';
 import './styles.css';
 import './polish.css';
+import './interaction.css';
 
 createRoot(document.getElementById('root')!).render(<StrictMode><AuthGate><WorkspaceGate><App /></WorkspaceGate></AuthGate></StrictMode>);
