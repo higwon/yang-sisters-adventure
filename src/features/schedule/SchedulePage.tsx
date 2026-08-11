@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
-import { ChevronLeft, ChevronRight, Clock3, Link, MapPin, Plus, Trash2, Users } from 'lucide-react';
+import { Clock3, Link, MapPin, Plus, Trash2, Users } from 'lucide-react';
 import { api } from '../../api';
 import { useTrip } from '../../app/TripContext';
 import type { Dashboard, ScheduleItem } from '../../domain';
@@ -35,7 +35,6 @@ export function SchedulePage() {
 function ScheduleWorkspace({ tripDates: dates, dashboard, items, planning, reload, reloadPlanning }: { tripDates: string[]; dashboard: Dashboard; items: ScheduleItem[]; planning: import('../../domain').PlanningItem[]; reload: () => void; reloadPlanning: () => void }) {
   const [selectedDate, setSelectedDate] = useState(dates[0]); const [draft, setDraft] = useState<Draft>();
   const grouped = useMemo(() => Object.fromEntries(dates.map((date) => [date, items.filter((item) => item.day_date === date)])), [dates, items]);
-  const selectedIndex = Math.max(0, dates.indexOf(selectedDate));
   const openSlot = (date: string, hour = 9) => setDraft({ dayDate: date, startTime: `${String(hour).padStart(2, '0')}:00` });
   return <section className="scheduleWorkspace">
     <header className="scheduleHeader"><div><h2>여행 일정</h2><p>날짜별 일정을 한눈에 보고 빠르게 수정하세요.</p></div><button className="scheduleAdd" onClick={() => openSlot(selectedDate)}><Plus size={18} />일정 추가</button></header>
@@ -44,7 +43,7 @@ function ScheduleWorkspace({ tripDates: dates, dashboard, items, planning, reloa
       <div className="itineraryHeader"><span />{dates.map((date, index) => <button key={date} onClick={() => { setSelectedDate(date); openSlot(date); }}><b>DAY {index + 1}</b><span>{formatDay(date)}</span><em>{grouped[date].length}개 일정</em></button>)}</div>
       <div className="itineraryBody"><aside>{Array.from({ length: 17 }, (_, i) => <time key={i}>{String(i + 7).padStart(2, '0')}:00</time>)}</aside>{dates.map((date) => <DayColumn key={date} items={grouped[date]} open={(hour) => openSlot(date, hour)} edit={(item) => setDraft({ item, dayDate: date })} />)}</div>
     </div><PlanningInbox items={planning} dates={dates} reloadPlanning={reloadPlanning} reloadSchedule={reload} /></div>
-    <div className="mobileTimeline"><header><button disabled={selectedIndex === 0} onClick={() => setSelectedDate(dates[selectedIndex - 1])}><ChevronLeft /></button><div><b>{formatDay(selectedDate)}</b><small>DAY {selectedIndex + 1}</small></div><button disabled={selectedIndex === dates.length - 1} onClick={() => setSelectedDate(dates[selectedIndex + 1])}><ChevronRight /></button></header>{grouped[selectedDate].length ? grouped[selectedDate].map((item) => <MobileItem key={item.id} item={item} edit={() => setDraft({ item, dayDate: selectedDate })} />) : <button className="emptyDay" onClick={() => openSlot(selectedDate)}><Plus />아직 일정이 없어요. 첫 일정을 추가해 보세요.</button>}<button className="floatingAdd" onClick={() => openSlot(selectedDate)} aria-label="일정 추가"><Plus /></button></div>
+    <div className="mobileTimeline">{grouped[selectedDate].length ? grouped[selectedDate].map((item) => <MobileItem key={item.id} item={item} edit={() => setDraft({ item, dayDate: selectedDate })} />) : <button className="emptyDay" onClick={() => openSlot(selectedDate)}><Plus />아직 일정이 없어요. 첫 일정을 추가해 보세요.</button>}<button className="floatingAdd" onClick={() => openSlot(selectedDate)} aria-label="일정 추가"><Plus /></button></div>
     {draft && <ScheduleEditor draft={draft} dates={dates} dashboard={dashboard} close={() => setDraft(undefined)} reload={reload} />}
   </section>;
 }
