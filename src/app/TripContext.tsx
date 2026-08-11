@@ -1,11 +1,11 @@
 import { createContext, useContext, type ReactNode } from 'react';
 import type { TripSummary } from '../api';
 
-export type TripContextValue = TripSummary & { updateCurrentTrip: (changes: Partial<TripSummary>) => void };
+export type TripContextValue = TripSummary & { updateCurrentTrip: (changes: Partial<TripSummary>) => void; removeCurrentTrip: () => void };
 const TripContext = createContext<TripContextValue | null>(null);
 
-export function TripProvider({ value, updateCurrentTrip, children }: { value: TripSummary; updateCurrentTrip: (changes: Partial<TripSummary>) => void; children: ReactNode }) {
-  return <TripContext.Provider value={{ ...value, updateCurrentTrip }}>{children}</TripContext.Provider>;
+export function TripProvider({ value, updateCurrentTrip, removeCurrentTrip, children }: { value: TripSummary; updateCurrentTrip: (changes: Partial<TripSummary>) => void; removeCurrentTrip: () => void; children: ReactNode }) {
+  return <TripContext.Provider value={{ ...value, updateCurrentTrip, removeCurrentTrip }}>{children}</TripContext.Provider>;
 }
 
 export function useTrip() {
