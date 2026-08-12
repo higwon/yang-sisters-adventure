@@ -37,9 +37,20 @@ export function BoardPage() {
 
 function PostCard({ post, currentUserId, busy, setBusy, reload, update, setError, convert }: { post: BoardPost; currentUserId: number; busy: boolean; setBusy: (id?: number) => void; reload: () => Promise<void>; update: (change: (post: BoardPost) => BoardPost) => void; setError: (message: string) => void; convert: () => void }) {
   const link = post.map_url ?? post.url; const mapLink = link ? isMapLink(link) : false;
+  const [preview, setPreview] = useState<{ src: string; name: string } | null>(null);
+  useEffect(() => {
+    if (!preview) return;
+    const close = (event: KeyboardEvent) => { if (event.key === 'Escape') setPreview(null); };
+    document.addEventListener('keydown', close);
+    return () => document.removeEventListener('keydown', close);
+  }, [preview]);
   return <article className="postCard"><header><UserAvatar user={{ id: post.author_id, name: post.author_name, avatar_color: post.avatar_color, avatar_key: post.avatar_key }} /><div><b>{post.author_name}</b><small>{post.created_at.replace('T', ' ').slice(0, 16)}</small></div><button aria-label="게시물 삭제" disabled={busy} onClick={async () => { if (confirm('게시물과 첨부 파일을 삭제할까요?')) try { setBusy(post.id); await boardApi.deletePost(post.id); await reload(); } catch (reason) { setError(reason instanceof Error ? reason.message : '게시물을 삭제하지 못했어요.'); } finally { setBusy(); } }}><Trash2 size={16} /></button></header>
     <small className={`postKind ${post.kind}`}>{kindLabel(post.kind)}</small>{post.title && <h2>{post.title}</h2>}{post.content && <p>{post.content}</p>}{link && <a className={`sharedUrl ${mapLink ? 'mapLink' : ''}`} href={link} target="_blank" rel="noreferrer">{mapLink ? <MapPinned size={15} /> : <ExternalLink size={15} />}{mapLink ? '지도에서 보기' : '링크 열기'}<small>{link}</small></a>}
-    {post.attachments.length > 0 && <div className="attachments">{post.attachments.map((attachment) => attachment.content_type.startsWith('image/') ? <a href={boardApi.attachmentUrl(attachment.id)} target="_blank" rel="noreferrer" key={attachment.id}><img src={boardApi.attachmentUrl(attachment.id)} alt={attachment.file_name} /><small>{attachment.file_name}</small></a> : <a className="pdf" href={boardApi.attachmentUrl(attachment.id)} target="_blank" rel="noreferrer" key={attachment.id}><FileText /><span><b>{attachment.file_name}</b><small>{formatBytes(attachment.byte_size)}</small></span></a>)}</div>}
+    {post.attachments.length > 0 && <div className="attachments">{post.attachments.map((attachment) => {
+      const attachmentUrl = boardApi.attachmentUrl(attachment.id);
+      return attachment.content_type.startsWith('image/') ? <button type="button" className="imageAttachment" onClick={() => setPreview({ src: attachmentUrl, name: attachment.file_name })} key={attachment.id}><img src={attachmentUrl} alt={attachment.file_name} /><small>{attachment.file_name}</small></button> : <a className="pdf" href={attachmentUrl} target="_blank" rel="noreferrer" key={attachment.id}><FileText /><span><b>{attachment.file_name}</b><small>{formatBytes(attachment.byte_size)}</small></span></a>;
+    })}</div>}
+    {preview && <div className="imagePreviewBackdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setPreview(null); }}><section className="imagePreview" role="dialog" aria-modal="true" aria-label={`${preview.name} 미리보기`}><header><span>{preview.name}</span><button type="button" onClick={() => setPreview(null)} aria-label="이미지 미리보기 닫기"><X /></button></header><img src={preview.src} alt={preview.name} /></section></div>}
     <footer><span><MessageCircle size={14} />댓글 {post.comment_count}</span><button disabled={busy || post.conversions.some((item) => item.target_type === 'planning')} onClick={convert}><Plus size={14} />{busy ? '추가 중…' : '일정 후보로 추가'}</button></footer>
     <Comments post={post} currentUserId={currentUserId} update={update} setError={setError} />
   </article>;
