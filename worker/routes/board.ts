@@ -11,6 +11,8 @@ const conversionSchema = z.object({
   title: z.string().trim().min(1).optional(),
 });
 
+const commentSchema = z.object({ content: z.string().trim().min(1, '댓글을 입력해 주세요.').max(500, '댓글은 500자까지 입력할 수 있어요.') });
+
 boardRoutes.get('/posts', async (c) => {
   const page = Math.max(1, Number(c.req.query('page')) || 1);
   const limit = Math.min(30, Math.max(1, Number(c.req.query('limit')) || 10));
@@ -20,13 +22,34 @@ boardRoutes.get('/posts', async (c) => {
     c.env.DB.prepare(`SELECT p.*,u.name author_name,u.avatar_color,u.avatar_key,
       (SELECT json_group_array(json_object('id',a.id,'file_name',a.file_name,'content_type',a.content_type,'byte_size',a.byte_size)) FROM attachments a WHERE a.post_id=p.id) attachments,
       (SELECT json_group_array(json_object('target_type',pc.target_type,'target_id',pc.target_id)) FROM post_conversions pc WHERE pc.post_id=p.id) conversions
+      ,(SELECT json_group_array(json_object('id',c.id,'author_id',c.author_id,'author_name',c.author_name,'avatar_color',c.avatar_color,'avatar_key',c.avatar_key,'content',c.content,'created_at',c.created_at)) FROM (
+        SELECT pc.id,pc.author_id,u.name author_name,u.avatar_color,u.avatar_key,pc.content,pc.created_at
+        FROM post_comments pc JOIN users u ON u.id=pc.author_id WHERE pc.post_id=p.id ORDER BY pc.created_at,pc.id
+      ) c) comments
       FROM posts p JOIN users u ON u.id=p.author_id WHERE p.trip_id=? ORDER BY p.created_at DESC,p.id DESC LIMIT ? OFFSET ?`)
       .bind(tripId, limit, offset).all(),
     c.env.DB.prepare('SELECT COUNT(*) count FROM posts WHERE trip_id=?').bind(tripId).first<number>('count'),
     c.env.DB.prepare('SELECT COALESCE(SUM(a.byte_size),0) bytes FROM attachments a JOIN posts p ON p.id=a.post_id WHERE p.trip_id=?')
       .bind(tripId).first<number>('bytes'),
   ]);
-  return c.json({ posts: posts.results, page, has_more: offset + posts.results.length < (count ?? 0), usage_bytes: usage ?? 0 });
+  return c.json({ posts: posts.results, page, has_more: offset + posts.results.length < (count ?? 0), usage_bytes: usage ?? 0, current_user_id: c.get('userId') });
+});
+
+boardRoutes.post('/posts/:id/comments', zValidator('json', commentSchema), async (c) => {
+  const post = await c.env.DB.prepare('SELECT id FROM posts WHERE id=? AND trip_id=?').bind(c.req.param('id'), c.get('tripId')).first();
+  if (!post) return c.json({ error: '게시물을 찾을 수 없어요.' }, 404);
+  const id = await c.env.DB.prepare('INSERT INTO post_comments(post_id,author_id,content) VALUES(?,?,?) RETURNING id')
+    .bind(c.req.param('id'), c.get('userId'), c.req.valid('json').content).first<number>('id');
+  return c.json({ id }, 201);
+});
+
+boardRoutes.delete('/posts/:postId/comments/:commentId', async (c) => {
+  const comment = await c.env.DB.prepare(`SELECT pc.id,pc.author_id FROM post_comments pc JOIN posts p ON p.id=pc.post_id
+    WHERE pc.id=? AND pc.post_id=? AND p.trip_id=?`).bind(c.req.param('commentId'), c.req.param('postId'), c.get('tripId')).first<{ id: number; author_id: number }>();
+  if (!comment) return c.json({ error: '댓글을 찾을 수 없어요.' }, 404);
+  if (comment.author_id !== c.get('userId')) return c.json({ error: '내 댓글만 삭제할 수 있어요.' }, 403);
+  await c.env.DB.prepare('DELETE FROM post_comments WHERE id=?').bind(comment.id).run();
+  return c.json({ ok: true });
 });
 
 boardRoutes.get('/attachments', async (c) => c.json((await c.env.DB.prepare(`SELECT a.id,a.file_name,a.content_type,a.byte_size,p.title post_title FROM attachments a JOIN posts p ON p.id=a.post_id WHERE p.trip_id=? ORDER BY a.created_at DESC LIMIT 100`).bind(c.get('tripId')).all()).results));

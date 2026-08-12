@@ -10,6 +10,8 @@ const base = 'https://yang-sisters-adventure.higwon2.workers.dev';
 const output = process.argv[2] || 'ui-review/redesign-2026-08-12';
 const sizes = [{ name: '320', width: 320, height: 800 }, { name: '390', width: 390, height: 844 }, { name: '430', width: 430, height: 932 }, { name: '768', width: 768, height: 1024 }, { name: '1024', width: 1024, height: 768 }, { name: '1440', width: 1440, height: 900 }, { name: '1920', width: 1920, height: 1080 }];
 const pages = ['home', 'schedule', 'board', 'expenses', 'settings'];
+const selectedPages = process.argv[3] ? pages.filter((page) => process.argv[3].split(',').includes(page)) : pages;
+const selectedSizes = process.argv[4] ? sizes.filter((size) => process.argv[4].split(',').includes(size.name)) : sizes;
 const metrics = [];
 await mkdir(output, { recursive: true });
 const profileDir = `${output}/chrome-profile`;
@@ -29,7 +31,7 @@ try {
   const login = await fetch(`${base}/api/auth/profile`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ user_id: profile.id }) });
   const cookiePair = login.headers.get('set-cookie')?.split(';')[0]; if (!cookiePair) throw new Error('Session cookie unavailable'); const separator = cookiePair.indexOf('=');
   await send('Network.setCookie', { name: cookiePair.slice(0, separator), value: cookiePair.slice(separator + 1), domain: 'yang-sisters-adventure.higwon2.workers.dev', path: '/', secure: true, httpOnly: true });
-  for (const size of sizes) for (const page of pages) {
+  for (const size of selectedSizes) for (const page of selectedPages) {
     await send('Emulation.setDeviceMetricsOverride', { width: size.width, height: size.height, deviceScaleFactor: 1, mobile: size.width < 768 });
     await send('Page.navigate', { url: `${base}/trips/2/${page}` }); await sleep(2800);
     const layout = await send('Runtime.evaluate', { expression: `(() => {

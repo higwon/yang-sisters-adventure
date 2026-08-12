@@ -1,10 +1,11 @@
 export interface BoardAttachment { id: number; file_name: string; content_type: string; byte_size: number }
 export interface BoardConversion { target_type: 'planning' | 'place' | 'reservation'; target_id: number }
+export interface BoardComment { id: number; author_id: number; author_name: string; avatar_color: string; avatar_key: string | null; content: string; created_at: string }
 export interface BoardPost {
   id: number; trip_id: number; author_id: number; author_name: string; avatar_color: string; avatar_key: string | null;
   kind: 'general' | 'place' | 'restaurant' | 'cafe' | 'tour' | 'info'; title: string | null;
   content: string | null; url: string | null; map_url: string | null; created_at: string;
-  attachments: BoardAttachment[]; conversions: BoardConversion[];
+  attachments: BoardAttachment[]; conversions: BoardConversion[]; comments: BoardComment[];
 }
 
 const base = () => {
@@ -17,10 +18,11 @@ let firstPageCache: { key: string; expiresAt: number; value: Awaited<ReturnType<
 let firstPagePending: { key: string; value: ReturnType<typeof loadPosts> } | undefined;
 
 async function loadPosts(page = 1) {
-  const result = await response<{ posts: Array<BoardPost & { attachments: string | BoardAttachment[]; conversions: string | BoardConversion[] }>; page: number; has_more: boolean; usage_bytes: number }>(await fetch(`${base()}/posts?page=${page}&limit=10`));
+  const result = await response<{ posts: Array<BoardPost & { attachments: string | BoardAttachment[]; conversions: string | BoardConversion[]; comments: string | BoardComment[] }>; page: number; has_more: boolean; usage_bytes: number; current_user_id: number }>(await fetch(`${base()}/posts?page=${page}&limit=10`));
   return { ...result, posts: result.posts.map((post) => ({ ...post,
     attachments: typeof post.attachments === 'string' ? JSON.parse(post.attachments) as BoardAttachment[] : post.attachments,
     conversions: typeof post.conversions === 'string' ? JSON.parse(post.conversions) as BoardConversion[] : post.conversions,
+    comments: typeof post.comments === 'string' ? JSON.parse(post.comments) as BoardComment[] : post.comments,
   })) };
 }
 
@@ -58,6 +60,8 @@ export const boardApi = {
   },
   deletePost: async (id: number) => { const result = await response<{ ok: boolean }>(await fetch(`${base()}/posts/${id}`, { method: 'DELETE' })); invalidatePosts(); return result; },
   convertPost: async (id: number, target_type: BoardConversion['target_type']) => { const result = await response<{ target_id: number }>(await fetch(`${base()}/posts/${id}/convert`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ target_type }) })); invalidatePosts(); return result; },
+  createComment: async (postId: number, content: string) => { const result = await response<{ id: number }>(await fetch(`${base()}/posts/${postId}/comments`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ content }) })); invalidatePosts(); return result; },
+  deleteComment: async (postId: number, commentId: number) => { const result = await response<{ ok: boolean }>(await fetch(`${base()}/posts/${postId}/comments/${commentId}`, { method: 'DELETE' })); invalidatePosts(); return result; },
   prefetch: async () => { await boardApi.posts(1); },
   attachmentUrl: (id: number) => `${base()}/attachments/${id}`,
 };
