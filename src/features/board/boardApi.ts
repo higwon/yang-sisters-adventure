@@ -17,8 +17,8 @@ const base = () => {
 let firstPageCache: { key: string; expiresAt: number; value: Awaited<ReturnType<typeof loadPosts>> } | undefined;
 let firstPagePending: { key: string; value: ReturnType<typeof loadPosts> } | undefined;
 
-async function loadPosts(page = 1, kind?: BoardPost['kind']) {
-  const query = new URLSearchParams({ page: String(page), limit: '10' }); if (kind) query.set('kind', kind);
+async function loadPosts(page = 1, kind?: BoardPost['kind'], limit = 10) {
+  const query = new URLSearchParams({ page: String(page), limit: String(limit) }); if (kind) query.set('kind', kind);
   const result = await response<{ posts: Array<BoardPost & { attachments: string | BoardAttachment[]; conversions: string | BoardConversion[]; comments: string | BoardComment[] }>; page: number; has_more: boolean; usage_bytes: number; current_user_id: number }>(await fetch(`${base()}/posts?${query}`));
   return { ...result, posts: result.posts.map((post) => ({ ...post,
     attachments: typeof post.attachments === 'string' ? JSON.parse(post.attachments) as BoardAttachment[] : post.attachments,
@@ -47,6 +47,17 @@ export const boardApi = {
     const value = await request.finally(() => { if (firstPagePending?.value === request) firstPagePending = undefined; });
     if (page === 1) firstPageCache = { key, expiresAt: Date.now() + 30_000, value };
     return value;
+  },
+  post: async (id: number) => {
+    let page = 1;
+    do {
+      const result = await loadPosts(page, undefined, 30);
+      const post = result.posts.find((item) => item.id === id);
+      if (post) return { post, current_user_id: result.current_user_id };
+      if (!result.has_more) break;
+      page += 1;
+    } while (page <= 100);
+    throw new Error('게시물을 찾을 수 없어요.');
   },
   createPost: async (data: { kind: string; title: string; content: string; url: string; files: File[] }) => {
     const form = new FormData();
