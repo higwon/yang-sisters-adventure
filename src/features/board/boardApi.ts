@@ -63,6 +63,12 @@ export const boardApi = {
     invalidatePosts();
     return result;
   },
+  replacePost: async (id: number, data: { kind: BoardPost['kind']; title: string | null; content: string | null; url: string | null; files: File[]; removeAttachmentIds: number[] }) => {
+    const form = new FormData(); form.set('kind', data.kind); if (data.title) form.set('title', data.title); if (data.content) form.set('content', data.content); if (data.url) form.set('url', data.url);
+    data.files.forEach((file) => form.append('files', file)); data.removeAttachmentIds.forEach((attachmentId) => form.append('remove_attachment_ids', String(attachmentId)));
+    const result = await response<{ id: number; kind: BoardPost['kind']; title: string | null; content: string | null; url: string | null; attachments: BoardAttachment[] }>(await fetch(`${base()}/posts/${id}`, { method: 'PUT', body: form }));
+    invalidatePosts(); return result;
+  },
   addAttachments: async (postId: number, files: File[]) => {
     const form = new FormData(); files.forEach((file) => form.append('files', file));
     const result = await response<{ attachments: BoardAttachment[] }>(await fetch(`${base()}/posts/${postId}/attachments`, { method: 'POST', body: form }));

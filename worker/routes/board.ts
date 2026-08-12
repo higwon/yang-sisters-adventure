@@ -17,7 +17,7 @@ const postUpdateSchema = z.object({
   title: z.string().trim().max(120).nullable(),
   content: z.string().trim().max(5000).nullable(),
   url: z.string().trim().url('올바른 URL을 입력해 주세요.').nullable(),
-}).refine((value) => value.title || value.content || value.url, { message: '제목, 내용 또는 링크 중 하나는 입력해 주세요.' });
+});
 
 boardRoutes.get('/posts', async (c) => {
   const page = Math.max(1, Number(c.req.query('page')) || 1);
@@ -161,6 +161,55 @@ boardRoutes.post('/posts/:id/attachments', async (c) => {
   return c.json({ attachments: created }, 201);
 });
 
+boardRoutes.put('/posts/:id', async (c) => {
+  const post = await c.env.DB.prepare('SELECT id,author_id FROM posts WHERE id=? AND trip_id=?')
+    .bind(c.req.param('id'), c.get('tripId')).first<{ id: number; author_id: number }>();
+  if (!post) return c.json({ error: '게시물을 찾을 수 없어요.' }, 404);
+  if (post.author_id !== c.get('userId')) return c.json({ error: '내 게시물만 수정할 수 있어요.' }, 403);
+  const form = await c.req.formData();
+  const kind = String(form.get('kind') ?? 'general');
+  if (!['general', 'place', 'restaurant', 'cafe', 'tour', 'info'].includes(kind)) return c.json({ error: '게시물 종류를 확인해 주세요.' }, 400);
+  const title = String(form.get('title') ?? '').trim() || null;
+  const content = String(form.get('content') ?? '').trim() || null;
+  const rawUrl = String(form.get('url') ?? '').trim(); const url = rawUrl || null;
+  if (url && !z.string().url().safeParse(url).success) return c.json({ error: '올바른 URL을 입력해 주세요.' }, 400);
+  const removeIds = [...new Set(form.getAll('remove_attachment_ids').map(Number).filter(Number.isInteger))];
+  const current = await c.env.DB.prepare('SELECT id,object_key,file_name,content_type,byte_size FROM attachments WHERE post_id=?')
+    .bind(post.id).all<{ id: number; object_key: string; file_name: string; content_type: string; byte_size: number }>();
+  if (removeIds.some((id) => !current.results.some((attachment) => attachment.id === id))) return c.json({ error: '삭제할 첨부 파일을 확인해 주세요.' }, 400);
+  const files = form.getAll('files').filter((item): item is File => item instanceof File && item.size > 0);
+  const retained = current.results.filter((attachment) => !removeIds.includes(attachment.id));
+  try {
+    validateAttachments(files);
+    const finalImageCount = retained.filter((attachment) => attachment.content_type.startsWith('image/')).length + files.filter((file) => file.type.startsWith('image/')).length;
+    if (finalImageCount > 5) throw new Error('이미지는 게시물당 5개까지 첨부할 수 있어요.');
+    if (!title && !content && !url && retained.length + files.length === 0) throw new Error('제목, 내용, 링크 또는 첨부 파일 중 하나는 남겨 주세요.');
+    const usedBytes = await c.env.DB.prepare('SELECT COALESCE(SUM(byte_size),0) bytes FROM attachments').first<number>('bytes') ?? 0;
+    const removedBytes = current.results.filter((attachment) => removeIds.includes(attachment.id)).reduce((sum, attachment) => sum + attachment.byte_size, 0);
+    assertWithinQuota(usedBytes - removedBytes, files.reduce((sum, file) => sum + file.size, 0));
+  } catch (error) { return c.json({ error: error instanceof Error ? error.message : '첨부 파일을 확인해 주세요.' }, 400); }
+
+  const uploaded: Array<{ key: string; file: File }> = [];
+  try {
+    for (const file of files) {
+      const key = `trips/${c.get('tripId')}/posts/${post.id}/${crypto.randomUUID()}-${safeFileName(file.name)}`;
+      await c.env.ATTACHMENTS.put(key, file.stream(), { httpMetadata: { contentType: file.type } });
+      uploaded.push({ key, file });
+    }
+    const statements = [c.env.DB.prepare('UPDATE posts SET kind=?,title=?,content=?,url=?,map_url=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=? AND trip_id=?').bind(kind, title, content, url, post.id, c.get('tripId'))];
+    for (const { key, file } of uploaded) statements.push(c.env.DB.prepare('INSERT INTO attachments(post_id,object_key,file_name,content_type,byte_size) VALUES(?,?,?,?,?)').bind(post.id, key, file.name, file.type, file.size));
+    if (removeIds.length) statements.push(c.env.DB.prepare(`DELETE FROM attachments WHERE post_id=? AND id IN (${removeIds.map(() => '?').join(',')})`).bind(post.id, ...removeIds));
+    await c.env.DB.batch(statements);
+  } catch (error) {
+    await Promise.all(uploaded.map(({ key }) => c.env.ATTACHMENTS.delete(key)));
+    console.error(error); return c.json({ error: '게시물 변경사항을 저장하지 못했어요.' }, 500);
+  }
+  const removedObjects = current.results.filter((attachment) => removeIds.includes(attachment.id));
+  await Promise.all(removedObjects.map((attachment) => c.env.ATTACHMENTS.delete(attachment.object_key).catch((error) => console.error('attachment cleanup failed', error))));
+  const attachments = await c.env.DB.prepare('SELECT id,file_name,content_type,byte_size FROM attachments WHERE post_id=? ORDER BY id').bind(post.id).all();
+  return c.json({ id: post.id, kind, title, content, url, attachments: attachments.results });
+});
+
 boardRoutes.delete('/posts/:postId/attachments/:attachmentId', async (c) => {
   const attachment = await c.env.DB.prepare(`SELECT a.id,a.object_key,p.author_id FROM attachments a JOIN posts p ON p.id=a.post_id
     WHERE a.id=? AND a.post_id=? AND p.trip_id=?`).bind(c.req.param('attachmentId'), c.req.param('postId'), c.get('tripId'))
@@ -178,14 +227,19 @@ boardRoutes.patch('/posts/:id', zValidator('json', postUpdateSchema), async (c) 
   if (!post) return c.json({ error: '게시물을 찾을 수 없어요.' }, 404);
   if (post.author_id !== c.get('userId')) return c.json({ error: '내 게시물만 수정할 수 있어요.' }, 403);
   const data = c.req.valid('json');
+  if (!data.title && !data.content && !data.url) {
+    const attachmentCount = await c.env.DB.prepare('SELECT COUNT(*) count FROM attachments WHERE post_id=?').bind(post.id).first<number>('count') ?? 0;
+    if (!attachmentCount) return c.json({ error: '제목, 내용, 링크 또는 첨부 파일 중 하나는 남겨 주세요.' }, 400);
+  }
   await c.env.DB.prepare('UPDATE posts SET kind=?,title=?,content=?,url=?,map_url=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=? AND trip_id=?')
     .bind(data.kind, data.title, data.content, data.url, post.id, c.get('tripId')).run();
   return c.json({ ...data, id: post.id });
 });
 
 boardRoutes.delete('/posts/:id', async (c) => {
-  const post = await c.env.DB.prepare('SELECT id FROM posts WHERE id=? AND trip_id=?').bind(c.req.param('id'), c.get('tripId')).first();
+  const post = await c.env.DB.prepare('SELECT id,author_id FROM posts WHERE id=? AND trip_id=?').bind(c.req.param('id'), c.get('tripId')).first<{ id: number; author_id: number }>();
   if (!post) return c.json({ error: '게시물을 찾을 수 없어요.' }, 404);
+  if (post.author_id !== c.get('userId')) return c.json({ error: '내 게시물만 삭제할 수 있어요.' }, 403);
   const attachments = await c.env.DB.prepare('SELECT object_key FROM attachments WHERE post_id=?').bind(c.req.param('id')).all<{ object_key: string }>();
   await Promise.all(attachments.results.map(({ object_key }) => c.env.ATTACHMENTS.delete(object_key)));
   await c.env.DB.prepare('DELETE FROM posts WHERE id=? AND trip_id=?').bind(c.req.param('id'), c.get('tripId')).run();
