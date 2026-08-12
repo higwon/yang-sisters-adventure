@@ -63,6 +63,15 @@ export const boardApi = {
     invalidatePosts();
     return result;
   },
+  addAttachments: async (postId: number, files: File[]) => {
+    const form = new FormData(); files.forEach((file) => form.append('files', file));
+    const result = await response<{ attachments: BoardAttachment[] }>(await fetch(`${base()}/posts/${postId}/attachments`, { method: 'POST', body: form }));
+    invalidatePosts(); return result;
+  },
+  deleteAttachment: async (postId: number, attachmentId: number) => {
+    const result = await response<{ ok: boolean }>(await fetch(`${base()}/posts/${postId}/attachments/${attachmentId}`, { method: 'DELETE' }));
+    invalidatePosts(); return result;
+  },
   deletePost: async (id: number) => { const result = await response<{ ok: boolean }>(await fetch(`${base()}/posts/${id}`, { method: 'DELETE' })); invalidatePosts(); return result; },
   convertPost: async (id: number, target_type: BoardConversion['target_type']) => { const result = await response<{ target_id: number }>(await fetch(`${base()}/posts/${id}/convert`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ target_type }) })); invalidatePosts(); return result; },
   comments: async (postId: number) => response<{ comments: BoardComment[] }>(await fetch(`${base()}/posts/${postId}/comments`)),
