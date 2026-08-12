@@ -17,8 +17,8 @@ export function ExpensesPage() {
   if (error) return <div className="expenseState">{error}</div>;
   if (!data) return <div className="expenseState">비용을 불러오는 중…</div>;
   return <section className="expensePage">
-    <header className="expenseHeader"><div><h1>여행 비용</h1><p>이번 여행에 사용한 원화 금액을 간단히 기록해요.</p></div><button className="expenseAdd" onClick={() => setEditing(null)}><Plus />비용 추가</button></header>
-    <section className="expenseTotal"><span><WalletCards /><small>총 지출</small></span><strong>{formatKrw(data.total_minor)}</strong></section>
+    <header className="expenseHeader"><div><h1>여행 비용</h1><p>이번 여행에 사용한 원화 금액을 간단히 기록해요.</p></div></header>
+    <section className="expenseOverview"><div className="expenseTotal"><span><WalletCards /><small>총 지출</small></span><strong>{formatKrw(data.total_minor)}</strong></div><button className="expenseAdd" onClick={() => setEditing(null)}><Plus />비용 추가</button></section>
     {data.legacy_count > 0 && <p className="legacyExpense">원화가 아닌 기존 비용 {data.legacy_count}건은 총액에서 제외했어요.</p>}
     <div className="expenseRows">
       {data.expenses.map((item) => <article key={item.id}>

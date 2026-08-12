@@ -2,12 +2,13 @@ import { spawn } from 'node:child_process';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { Buffer } from 'node:buffer';
 import { setTimeout } from 'node:timers';
+import process from 'node:process';
 /* global fetch, WebSocket */
 
 const chrome = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const base = 'https://yang-sisters-adventure.higwon2.workers.dev';
-const output = 'ui-review/redesign-2026-08-12';
-const sizes = [{ name: '320', width: 320, height: 800 }, { name: '390', width: 390, height: 844 }, { name: '430', width: 430, height: 932 }, { name: '768', width: 768, height: 1024 }, { name: '1440', width: 1440, height: 900 }, { name: '1920', width: 1920, height: 1080 }];
+const output = process.argv[2] || 'ui-review/redesign-2026-08-12';
+const sizes = [{ name: '320', width: 320, height: 800 }, { name: '390', width: 390, height: 844 }, { name: '430', width: 430, height: 932 }, { name: '768', width: 768, height: 1024 }, { name: '1024', width: 1024, height: 768 }, { name: '1440', width: 1440, height: 900 }, { name: '1920', width: 1920, height: 1080 }];
 const pages = ['home', 'schedule', 'board', 'expenses', 'settings'];
 const metrics = [];
 await mkdir(output, { recursive: true });
