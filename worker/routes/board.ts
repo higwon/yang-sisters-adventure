@@ -24,6 +24,11 @@ boardRoutes.get('/posts', async (c) => {
   const limit = Math.min(30, Math.max(1, Number(c.req.query('limit')) || 10));
   const offset = (page - 1) * limit;
   const tripId = c.get('tripId');
+  const kind = c.req.query('kind');
+  const validKind = kind && ['general', 'place', 'restaurant', 'cafe', 'tour', 'info'].includes(kind) ? kind : null;
+  const kindClause = validKind ? ' AND p.kind=?' : '';
+  const postBindings = validKind ? [tripId, validKind, limit, offset] : [tripId, limit, offset];
+  const countBindings = validKind ? [tripId, validKind] : [tripId];
   const [posts, count, usage] = await Promise.all([
     c.env.DB.prepare(`SELECT p.*,u.name author_name,u.avatar_color,u.avatar_key,
       (SELECT json_group_array(json_object('id',a.id,'file_name',a.file_name,'content_type',a.content_type,'byte_size',a.byte_size)) FROM attachments a WHERE a.post_id=p.id) attachments,
@@ -36,9 +41,9 @@ boardRoutes.get('/posts', async (c) => {
           ORDER BY pc.created_at DESC,pc.id DESC LIMIT 2
         ) latest ORDER BY latest.created_at,latest.id
       ) c) comments
-      FROM posts p JOIN users u ON u.id=p.author_id WHERE p.trip_id=? ORDER BY p.created_at DESC,p.id DESC LIMIT ? OFFSET ?`)
-      .bind(tripId, limit, offset).all(),
-    c.env.DB.prepare('SELECT COUNT(*) count FROM posts WHERE trip_id=?').bind(tripId).first<number>('count'),
+      FROM posts p JOIN users u ON u.id=p.author_id WHERE p.trip_id=?${kindClause} ORDER BY p.created_at DESC,p.id DESC LIMIT ? OFFSET ?`)
+      .bind(...postBindings).all(),
+    c.env.DB.prepare(`SELECT COUNT(*) count FROM posts p WHERE p.trip_id=?${kindClause}`).bind(...countBindings).first<number>('count'),
     c.env.DB.prepare('SELECT COALESCE(SUM(a.byte_size),0) bytes FROM attachments a JOIN posts p ON p.id=a.post_id WHERE p.trip_id=?')
       .bind(tripId).first<number>('bytes'),
   ]);

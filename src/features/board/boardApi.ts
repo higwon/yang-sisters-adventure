@@ -17,8 +17,9 @@ const base = () => {
 let firstPageCache: { key: string; expiresAt: number; value: Awaited<ReturnType<typeof loadPosts>> } | undefined;
 let firstPagePending: { key: string; value: ReturnType<typeof loadPosts> } | undefined;
 
-async function loadPosts(page = 1) {
-  const result = await response<{ posts: Array<BoardPost & { attachments: string | BoardAttachment[]; conversions: string | BoardConversion[]; comments: string | BoardComment[] }>; page: number; has_more: boolean; usage_bytes: number; current_user_id: number }>(await fetch(`${base()}/posts?page=${page}&limit=10`));
+async function loadPosts(page = 1, kind?: BoardPost['kind']) {
+  const query = new URLSearchParams({ page: String(page), limit: '10' }); if (kind) query.set('kind', kind);
+  const result = await response<{ posts: Array<BoardPost & { attachments: string | BoardAttachment[]; conversions: string | BoardConversion[]; comments: string | BoardComment[] }>; page: number; has_more: boolean; usage_bytes: number; current_user_id: number }>(await fetch(`${base()}/posts?${query}`));
   return { ...result, posts: result.posts.map((post) => ({ ...post,
     attachments: typeof post.attachments === 'string' ? JSON.parse(post.attachments) as BoardAttachment[] : post.attachments,
     conversions: typeof post.conversions === 'string' ? JSON.parse(post.conversions) as BoardConversion[] : post.conversions,
@@ -37,11 +38,11 @@ async function response<T>(result: Response): Promise<T> {
 }
 
 export const boardApi = {
-  posts: async (page = 1) => {
-    const key = base();
+  posts: async (page = 1, kind?: BoardPost['kind']) => {
+    const key = `${base()}:${kind ?? 'all'}`;
     if (page === 1 && firstPageCache?.key === key && firstPageCache.expiresAt > Date.now()) return firstPageCache.value;
     if (page === 1 && firstPagePending?.key === key) return firstPagePending.value;
-    const request = loadPosts(page);
+    const request = loadPosts(page, kind);
     if (page === 1) firstPagePending = { key, value: request };
     const value = await request.finally(() => { if (firstPagePending?.value === request) firstPagePending = undefined; });
     if (page === 1) firstPageCache = { key, expiresAt: Date.now() + 30_000, value };

@@ -6,7 +6,7 @@ const boardRedirects = new Set(['map', 'places', 'info', 'reservations']);
 const settingsRedirects = new Set(['more', 'tools', 'checklist', 'members']);
 
 export function readWorkspacePath() {
-  const match = window.location.pathname.match(/^\/trips\/(\d+)(?:\/([^/]+))?\/?$/);
+  const match = window.location.pathname.match(/^\/trips\/(\d+)(?:\/([^/]+))?(?:\/(\d+))?\/?$/);
   if (!match) return null;
   let candidate = match[2] as WorkspacePage | undefined;
   if (match[2] && boardRedirects.has(match[2])) candidate = 'board';
