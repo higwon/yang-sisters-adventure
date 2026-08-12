@@ -1,0 +1,716 @@
+[
+  {
+    "page": "home",
+    "viewport": "320",
+    "innerWidth": 320,
+    "bodyScrollWidth": 320,
+    "documentScrollWidth": 320,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 0,
+        "width": 320,
+        "right": 320
+      },
+      ".content": {
+        "left": 0,
+        "width": 320,
+        "right": 320
+      },
+      ".boardPage": null,
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  },
+  {
+    "page": "schedule",
+    "viewport": "320",
+    "innerWidth": 322,
+    "bodyScrollWidth": 322,
+    "documentScrollWidth": 322,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 0,
+        "width": 320,
+        "right": 320
+      },
+      ".content": {
+        "left": 0,
+        "width": 320,
+        "right": 320
+      },
+      ".boardPage": null,
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  },
+  {
+    "page": "board",
+    "viewport": "320",
+    "innerWidth": 320,
+    "bodyScrollWidth": 320,
+    "documentScrollWidth": 320,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 0,
+        "width": 320,
+        "right": 320
+      },
+      ".content": {
+        "left": 0,
+        "width": 320,
+        "right": 320
+      },
+      ".boardPage": {
+        "left": 0,
+        "width": 320,
+        "right": 320
+      },
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  },
+  {
+    "page": "expenses",
+    "viewport": "320",
+    "innerWidth": 320,
+    "bodyScrollWidth": 320,
+    "documentScrollWidth": 320,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 0,
+        "width": 320,
+        "right": 320
+      },
+      ".content": {
+        "left": 0,
+        "width": 320,
+        "right": 320
+      },
+      ".boardPage": null,
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  },
+  {
+    "page": "settings",
+    "viewport": "320",
+    "innerWidth": 320,
+    "bodyScrollWidth": 320,
+    "documentScrollWidth": 320,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 0,
+        "width": 320,
+        "right": 320
+      },
+      ".content": {
+        "left": 0,
+        "width": 320,
+        "right": 320
+      },
+      ".boardPage": null,
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  },
+  {
+    "page": "home",
+    "viewport": "390",
+    "innerWidth": 390,
+    "bodyScrollWidth": 390,
+    "documentScrollWidth": 390,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 0,
+        "width": 390,
+        "right": 390
+      },
+      ".content": {
+        "left": 0,
+        "width": 390,
+        "right": 390
+      },
+      ".boardPage": null,
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  },
+  {
+    "page": "schedule",
+    "viewport": "390",
+    "innerWidth": 392,
+    "bodyScrollWidth": 392,
+    "documentScrollWidth": 392,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 0,
+        "width": 390,
+        "right": 390
+      },
+      ".content": {
+        "left": 0,
+        "width": 390,
+        "right": 390
+      },
+      ".boardPage": null,
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  },
+  {
+    "page": "board",
+    "viewport": "390",
+    "innerWidth": 390,
+    "bodyScrollWidth": 390,
+    "documentScrollWidth": 390,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 0,
+        "width": 390,
+        "right": 390
+      },
+      ".content": {
+        "left": 0,
+        "width": 390,
+        "right": 390
+      },
+      ".boardPage": {
+        "left": 0,
+        "width": 390,
+        "right": 390
+      },
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  },
+  {
+    "page": "expenses",
+    "viewport": "390",
+    "innerWidth": 390,
+    "bodyScrollWidth": 390,
+    "documentScrollWidth": 390,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 0,
+        "width": 390,
+        "right": 390
+      },
+      ".content": {
+        "left": 0,
+        "width": 390,
+        "right": 390
+      },
+      ".boardPage": null,
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  },
+  {
+    "page": "settings",
+    "viewport": "390",
+    "innerWidth": 390,
+    "bodyScrollWidth": 390,
+    "documentScrollWidth": 390,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 0,
+        "width": 390,
+        "right": 390
+      },
+      ".content": {
+        "left": 0,
+        "width": 390,
+        "right": 390
+      },
+      ".boardPage": null,
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  },
+  {
+    "page": "home",
+    "viewport": "430",
+    "innerWidth": 430,
+    "bodyScrollWidth": 430,
+    "documentScrollWidth": 430,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 0,
+        "width": 430,
+        "right": 430
+      },
+      ".content": {
+        "left": 0,
+        "width": 430,
+        "right": 430
+      },
+      ".boardPage": null,
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  },
+  {
+    "page": "schedule",
+    "viewport": "430",
+    "innerWidth": 432,
+    "bodyScrollWidth": 432,
+    "documentScrollWidth": 432,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 0,
+        "width": 430,
+        "right": 430
+      },
+      ".content": {
+        "left": 0,
+        "width": 430,
+        "right": 430
+      },
+      ".boardPage": null,
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  },
+  {
+    "page": "board",
+    "viewport": "430",
+    "innerWidth": 430,
+    "bodyScrollWidth": 430,
+    "documentScrollWidth": 430,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 0,
+        "width": 430,
+        "right": 430
+      },
+      ".content": {
+        "left": 0,
+        "width": 430,
+        "right": 430
+      },
+      ".boardPage": {
+        "left": 0,
+        "width": 430,
+        "right": 430
+      },
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  },
+  {
+    "page": "expenses",
+    "viewport": "430",
+    "innerWidth": 430,
+    "bodyScrollWidth": 430,
+    "documentScrollWidth": 430,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 0,
+        "width": 430,
+        "right": 430
+      },
+      ".content": {
+        "left": 0,
+        "width": 430,
+        "right": 430
+      },
+      ".boardPage": null,
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  },
+  {
+    "page": "settings",
+    "viewport": "430",
+    "innerWidth": 430,
+    "bodyScrollWidth": 430,
+    "documentScrollWidth": 430,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 0,
+        "width": 430,
+        "right": 430
+      },
+      ".content": {
+        "left": 0,
+        "width": 430,
+        "right": 430
+      },
+      ".boardPage": null,
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  },
+  {
+    "page": "home",
+    "viewport": "768",
+    "innerWidth": 768,
+    "bodyScrollWidth": 768,
+    "documentScrollWidth": 768,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 0,
+        "width": 768,
+        "right": 768
+      },
+      ".content": {
+        "left": 0,
+        "width": 768,
+        "right": 768
+      },
+      ".boardPage": null,
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  },
+  {
+    "page": "schedule",
+    "viewport": "768",
+    "innerWidth": 768,
+    "bodyScrollWidth": 768,
+    "documentScrollWidth": 768,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 0,
+        "width": 768,
+        "right": 768
+      },
+      ".content": {
+        "left": 0,
+        "width": 768,
+        "right": 768
+      },
+      ".boardPage": null,
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  },
+  {
+    "page": "board",
+    "viewport": "768",
+    "innerWidth": 768,
+    "bodyScrollWidth": 768,
+    "documentScrollWidth": 768,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 0,
+        "width": 768,
+        "right": 768
+      },
+      ".content": {
+        "left": 0,
+        "width": 768,
+        "right": 768
+      },
+      ".boardPage": {
+        "left": 0,
+        "width": 768,
+        "right": 768
+      },
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  },
+  {
+    "page": "expenses",
+    "viewport": "768",
+    "innerWidth": 768,
+    "bodyScrollWidth": 768,
+    "documentScrollWidth": 768,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 0,
+        "width": 768,
+        "right": 768
+      },
+      ".content": {
+        "left": 0,
+        "width": 768,
+        "right": 768
+      },
+      ".boardPage": null,
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  },
+  {
+    "page": "settings",
+    "viewport": "768",
+    "innerWidth": 768,
+    "bodyScrollWidth": 768,
+    "documentScrollWidth": 768,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 0,
+        "width": 768,
+        "right": 768
+      },
+      ".content": {
+        "left": 0,
+        "width": 768,
+        "right": 768
+      },
+      ".boardPage": null,
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  },
+  {
+    "page": "home",
+    "viewport": "1440",
+    "innerWidth": 1440,
+    "bodyScrollWidth": 1440,
+    "documentScrollWidth": 1440,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 244,
+        "width": 1196,
+        "right": 1440
+      },
+      ".content": {
+        "left": 244,
+        "width": 1196,
+        "right": 1440
+      },
+      ".boardPage": null,
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  },
+  {
+    "page": "schedule",
+    "viewport": "1440",
+    "innerWidth": 1440,
+    "bodyScrollWidth": 1440,
+    "documentScrollWidth": 1440,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 244,
+        "width": 1196,
+        "right": 1440
+      },
+      ".content": {
+        "left": 244,
+        "width": 1196,
+        "right": 1440
+      },
+      ".boardPage": null,
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  },
+  {
+    "page": "board",
+    "viewport": "1440",
+    "innerWidth": 1440,
+    "bodyScrollWidth": 1440,
+    "documentScrollWidth": 1440,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 244,
+        "width": 1196,
+        "right": 1440
+      },
+      ".content": {
+        "left": 244,
+        "width": 1196,
+        "right": 1440
+      },
+      ".boardPage": {
+        "left": 332,
+        "width": 1020,
+        "right": 1352
+      },
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  },
+  {
+    "page": "expenses",
+    "viewport": "1440",
+    "innerWidth": 1440,
+    "bodyScrollWidth": 1440,
+    "documentScrollWidth": 1440,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 244,
+        "width": 1196,
+        "right": 1440
+      },
+      ".content": {
+        "left": 244,
+        "width": 1196,
+        "right": 1440
+      },
+      ".boardPage": null,
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  },
+  {
+    "page": "settings",
+    "viewport": "1440",
+    "innerWidth": 1440,
+    "bodyScrollWidth": 1440,
+    "documentScrollWidth": 1440,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 244,
+        "width": 1196,
+        "right": 1440
+      },
+      ".content": {
+        "left": 244,
+        "width": 1196,
+        "right": 1440
+      },
+      ".boardPage": null,
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  },
+  {
+    "page": "home",
+    "viewport": "1920",
+    "innerWidth": 1920,
+    "bodyScrollWidth": 1920,
+    "documentScrollWidth": 1920,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 244,
+        "width": 1676,
+        "right": 1920
+      },
+      ".content": {
+        "left": 244,
+        "width": 1676,
+        "right": 1920
+      },
+      ".boardPage": null,
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  },
+  {
+    "page": "schedule",
+    "viewport": "1920",
+    "innerWidth": 1920,
+    "bodyScrollWidth": 1920,
+    "documentScrollWidth": 1920,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 244,
+        "width": 1676,
+        "right": 1920
+      },
+      ".content": {
+        "left": 244,
+        "width": 1676,
+        "right": 1920
+      },
+      ".boardPage": null,
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  },
+  {
+    "page": "board",
+    "viewport": "1920",
+    "innerWidth": 1920,
+    "bodyScrollWidth": 1920,
+    "documentScrollWidth": 1920,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 244,
+        "width": 1676,
+        "right": 1920
+      },
+      ".content": {
+        "left": 244,
+        "width": 1676,
+        "right": 1920
+      },
+      ".boardPage": {
+        "left": 572,
+        "width": 1020,
+        "right": 1592
+      },
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  },
+  {
+    "page": "expenses",
+    "viewport": "1920",
+    "innerWidth": 1920,
+    "bodyScrollWidth": 1920,
+    "documentScrollWidth": 1920,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 244,
+        "width": 1676,
+        "right": 1920
+      },
+      ".content": {
+        "left": 244,
+        "width": 1676,
+        "right": 1920
+      },
+      ".boardPage": null,
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  },
+  {
+    "page": "settings",
+    "viewport": "1920",
+    "innerWidth": 1920,
+    "bodyScrollWidth": 1920,
+    "documentScrollWidth": 1920,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 244,
+        "width": 1676,
+        "right": 1920
+      },
+      ".content": {
+        "left": 244,
+        "width": 1676,
+        "right": 1920
+      },
+      ".boardPage": null,
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  }
+]
