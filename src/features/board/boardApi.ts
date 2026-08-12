@@ -58,6 +58,11 @@ export const boardApi = {
     invalidatePosts();
     return result;
   },
+  updatePost: async (id: number, data: { kind: BoardPost['kind']; title: string | null; content: string | null; url: string | null }) => {
+    const result = await response<{ id: number } & typeof data>(await fetch(`${base()}/posts/${id}`, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify(data) }));
+    invalidatePosts();
+    return result;
+  },
   deletePost: async (id: number) => { const result = await response<{ ok: boolean }>(await fetch(`${base()}/posts/${id}`, { method: 'DELETE' })); invalidatePosts(); return result; },
   convertPost: async (id: number, target_type: BoardConversion['target_type']) => { const result = await response<{ target_id: number }>(await fetch(`${base()}/posts/${id}/convert`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ target_type }) })); invalidatePosts(); return result; },
   comments: async (postId: number) => response<{ comments: BoardComment[] }>(await fetch(`${base()}/posts/${postId}/comments`)),

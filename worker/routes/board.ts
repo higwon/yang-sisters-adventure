@@ -12,6 +12,12 @@ const conversionSchema = z.object({
 });
 
 const commentSchema = z.object({ content: z.string().trim().min(1, '댓글을 입력해 주세요.').max(500, '댓글은 500자까지 입력할 수 있어요.') });
+const postUpdateSchema = z.object({
+  kind: z.enum(['general', 'place', 'restaurant', 'cafe', 'tour', 'info']),
+  title: z.string().trim().max(120).nullable(),
+  content: z.string().trim().max(5000).nullable(),
+  url: z.string().trim().url('올바른 URL을 입력해 주세요.').nullable(),
+}).refine((value) => value.title || value.content || value.url, { message: '제목, 내용 또는 링크 중 하나는 입력해 주세요.' });
 
 boardRoutes.get('/posts', async (c) => {
   const page = Math.max(1, Number(c.req.query('page')) || 1);
@@ -124,6 +130,17 @@ boardRoutes.get('/attachments/:id', async (c) => {
   headers.set('cache-control', 'private, max-age=3600');
   headers.set('x-content-type-options', 'nosniff');
   return new Response(object.body, { headers });
+});
+
+boardRoutes.patch('/posts/:id', zValidator('json', postUpdateSchema), async (c) => {
+  const post = await c.env.DB.prepare('SELECT id,author_id FROM posts WHERE id=? AND trip_id=?')
+    .bind(c.req.param('id'), c.get('tripId')).first<{ id: number; author_id: number }>();
+  if (!post) return c.json({ error: '게시물을 찾을 수 없어요.' }, 404);
+  if (post.author_id !== c.get('userId')) return c.json({ error: '내 게시물만 수정할 수 있어요.' }, 403);
+  const data = c.req.valid('json');
+  await c.env.DB.prepare('UPDATE posts SET kind=?,title=?,content=?,url=?,map_url=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=? AND trip_id=?')
+    .bind(data.kind, data.title, data.content, data.url, post.id, c.get('tripId')).run();
+  return c.json({ ...data, id: post.id });
 });
 
 boardRoutes.delete('/posts/:id', async (c) => {

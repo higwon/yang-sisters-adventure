@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { ExternalLink, FileText, Image, MapPinned, MessageCircle, Plus, Send, SlidersHorizontal, Trash2, X } from 'lucide-react';
+import { ExternalLink, FileText, Image, MapPinned, MessageCircle, Pencil, Plus, Send, SlidersHorizontal, Trash2, X } from 'lucide-react';
 import { UserAvatar } from '../../components/UserAvatar';
 import { boardApi, type BoardPost } from './boardApi';
 import './board.css';
@@ -38,22 +38,30 @@ export function BoardPage() {
 function PostCard({ post, currentUserId, busy, setBusy, reload, update, setError, convert }: { post: BoardPost; currentUserId: number; busy: boolean; setBusy: (id?: number) => void; reload: () => Promise<void>; update: (change: (post: BoardPost) => BoardPost) => void; setError: (message: string) => void; convert: () => void }) {
   const link = post.map_url ?? post.url; const mapLink = link ? isMapLink(link) : false;
   const [preview, setPreview] = useState<{ src: string; name: string } | null>(null);
+  const [editing, setEditing] = useState(false);
   useEffect(() => {
     if (!preview) return;
     const close = (event: KeyboardEvent) => { if (event.key === 'Escape') setPreview(null); };
     document.addEventListener('keydown', close);
     return () => document.removeEventListener('keydown', close);
   }, [preview]);
-  return <article className="postCard"><header><UserAvatar user={{ id: post.author_id, name: post.author_name, avatar_color: post.avatar_color, avatar_key: post.avatar_key }} /><div><b>{post.author_name}</b><small>{post.created_at.replace('T', ' ').slice(0, 16)}</small></div><button aria-label="게시물 삭제" disabled={busy} onClick={async () => { if (confirm('게시물과 첨부 파일을 삭제할까요?')) try { setBusy(post.id); await boardApi.deletePost(post.id); await reload(); } catch (reason) { setError(reason instanceof Error ? reason.message : '게시물을 삭제하지 못했어요.'); } finally { setBusy(); } }}><Trash2 size={16} /></button></header>
+  return <article className="postCard"><header><UserAvatar user={{ id: post.author_id, name: post.author_name, avatar_color: post.avatar_color, avatar_key: post.avatar_key }} /><div><b>{post.author_name}</b><small>{post.created_at.replace('T', ' ').slice(0, 16)}</small></div>{post.author_id === currentUserId && <button aria-label="게시물 수정" disabled={busy} onClick={() => setEditing(true)}><Pencil size={16} /></button>}<button aria-label="게시물 삭제" disabled={busy} onClick={async () => { if (confirm('게시물과 첨부 파일을 삭제할까요?')) try { setBusy(post.id); await boardApi.deletePost(post.id); await reload(); } catch (reason) { setError(reason instanceof Error ? reason.message : '게시물을 삭제하지 못했어요.'); } finally { setBusy(); } }}><Trash2 size={16} /></button></header>
     <small className={`postKind ${post.kind}`}>{kindLabel(post.kind)}</small>{post.title && <h2>{post.title}</h2>}{post.content && <p>{post.content}</p>}{link && <a className={`sharedUrl ${mapLink ? 'mapLink' : ''}`} href={link} target="_blank" rel="noreferrer">{mapLink ? <MapPinned size={15} /> : <ExternalLink size={15} />}{mapLink ? '지도에서 보기' : '링크 열기'}<small>{link}</small></a>}
     {post.attachments.length > 0 && <div className="attachments">{post.attachments.map((attachment) => {
       const attachmentUrl = boardApi.attachmentUrl(attachment.id);
       return attachment.content_type.startsWith('image/') ? <button type="button" className="imageAttachment" onClick={() => setPreview({ src: attachmentUrl, name: attachment.file_name })} key={attachment.id}><img src={attachmentUrl} alt={attachment.file_name} /><small>{attachment.file_name}</small></button> : <a className="pdf" href={attachmentUrl} target="_blank" rel="noreferrer" key={attachment.id}><FileText /><span><b>{attachment.file_name}</b><small>{formatBytes(attachment.byte_size)}</small></span></a>;
     })}</div>}
     {preview && <div className="imagePreviewBackdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setPreview(null); }}><section className="imagePreview" role="dialog" aria-modal="true" aria-label={`${preview.name} 미리보기`}><header><span>{preview.name}</span><button type="button" onClick={() => setPreview(null)} aria-label="이미지 미리보기 닫기"><X /></button></header><img src={preview.src} alt={preview.name} /></section></div>}
+    {editing && <EditPostModal post={post} close={() => setEditing(false)} saved={(data) => { update((current) => ({ ...current, ...data, map_url: null })); setEditing(false); }} setError={setError} />}
     <footer><span><MessageCircle size={14} />댓글 {post.comment_count}</span><button disabled={busy || post.conversions.some((item) => item.target_type === 'planning')} onClick={convert}><Plus size={14} />{busy ? '추가 중…' : '일정 후보로 추가'}</button></footer>
     <Comments post={post} currentUserId={currentUserId} update={update} setError={setError} />
   </article>;
+}
+
+function EditPostModal({ post, close, saved, setError }: { post: BoardPost; close: () => void; saved: (data: Pick<BoardPost, 'kind' | 'title' | 'content' | 'url'>) => void; setError: (message: string) => void }) {
+  const [kind, setKind] = useState(post.kind); const [title, setTitle] = useState(post.title ?? ''); const [content, setContent] = useState(post.content ?? ''); const [url, setUrl] = useState(post.map_url ?? post.url ?? ''); const [saving, setSaving] = useState(false);
+  const submit = async (event: FormEvent) => { event.preventDefault(); if (saving) return; try { setSaving(true); const data = { kind, title: title.trim() || null, content: content.trim() || null, url: url.trim() || null }; await boardApi.updatePost(post.id, data); saved(data); } catch (reason) { setError(reason instanceof Error ? reason.message : '게시물을 수정하지 못했어요.'); } finally { setSaving(false); } };
+  return <div className="editPostBackdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }}><form className="editPostModal" role="dialog" aria-modal="true" aria-label="게시물 수정" onSubmit={submit}><header><h2>게시물 수정</h2><button type="button" onClick={close} aria-label="게시물 수정 닫기"><X /></button></header><label><span>카테고리</span><select value={kind} onChange={(event) => setKind(event.target.value as BoardPost['kind'])}><option value="general">일반</option><option value="place">장소</option><option value="restaurant">맛집</option><option value="cafe">카페</option><option value="tour">투어</option><option value="info">예약/정보</option></select></label><label><span>제목</span><input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} placeholder="제목 (선택)" /></label><label><span>내용</span><textarea value={content} onChange={(event) => setContent(event.target.value)} maxLength={5000} placeholder="내용" /></label><label><span>링크</span><input type="url" value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://" /></label><small>첨부한 사진과 파일은 그대로 유지됩니다.</small><footer><button type="button" onClick={close}>취소</button><button className="primary" disabled={saving}>{saving ? '저장 중…' : '저장'}</button></footer></form></div>;
 }
 
 function Comments({ post, currentUserId, update, setError }: { post: BoardPost; currentUserId: number; update: (change: (post: BoardPost) => BoardPost) => void; setError: (message: string) => void }) {
