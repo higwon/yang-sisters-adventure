@@ -22,9 +22,10 @@ boardRoutes.get('/posts', async (c) => {
     c.env.DB.prepare(`SELECT p.*,u.name author_name,u.avatar_color,u.avatar_key,
       (SELECT json_group_array(json_object('id',a.id,'file_name',a.file_name,'content_type',a.content_type,'byte_size',a.byte_size)) FROM attachments a WHERE a.post_id=p.id) attachments,
       (SELECT json_group_array(json_object('target_type',pc.target_type,'target_id',pc.target_id)) FROM post_conversions pc WHERE pc.post_id=p.id) conversions
+      ,(SELECT COUNT(*) FROM post_comments pc WHERE pc.post_id=p.id) comment_count
       ,(SELECT json_group_array(json_object('id',c.id,'author_id',c.author_id,'author_name',c.author_name,'avatar_color',c.avatar_color,'avatar_key',c.avatar_key,'content',c.content,'created_at',c.created_at)) FROM (
         SELECT pc.id,pc.author_id,u.name author_name,u.avatar_color,u.avatar_key,pc.content,pc.created_at
-        FROM post_comments pc JOIN users u ON u.id=pc.author_id WHERE pc.post_id=p.id ORDER BY pc.created_at,pc.id
+        FROM post_comments pc JOIN users u ON u.id=pc.author_id WHERE pc.post_id=p.id ORDER BY pc.created_at DESC,pc.id DESC LIMIT 2
       ) c) comments
       FROM posts p JOIN users u ON u.id=p.author_id WHERE p.trip_id=? ORDER BY p.created_at DESC,p.id DESC LIMIT ? OFFSET ?`)
       .bind(tripId, limit, offset).all(),
@@ -38,9 +39,19 @@ boardRoutes.get('/posts', async (c) => {
 boardRoutes.post('/posts/:id/comments', zValidator('json', commentSchema), async (c) => {
   const post = await c.env.DB.prepare('SELECT id FROM posts WHERE id=? AND trip_id=?').bind(c.req.param('id'), c.get('tripId')).first();
   if (!post) return c.json({ error: '게시물을 찾을 수 없어요.' }, 404);
-  const id = await c.env.DB.prepare('INSERT INTO post_comments(post_id,author_id,content) VALUES(?,?,?) RETURNING id')
-    .bind(c.req.param('id'), c.get('userId'), c.req.valid('json').content).first<number>('id');
-  return c.json({ id }, 201);
+  const comment = await c.env.DB.prepare(`INSERT INTO post_comments(post_id,author_id,content) VALUES(?,?,?)
+    RETURNING id,author_id,content,created_at`).bind(c.req.param('id'), c.get('userId'), c.req.valid('json').content)
+    .first<{ id: number; author_id: number; content: string; created_at: string }>();
+  if (!comment) return c.json({ error: '댓글을 저장하지 못했어요.' }, 500);
+  return c.json({ ...comment, author_name: c.get('user').name, avatar_color: c.get('user').avatar_color, avatar_key: c.get('user').avatar_key }, 201);
+});
+
+boardRoutes.get('/posts/:id/comments', async (c) => {
+  const post = await c.env.DB.prepare('SELECT id FROM posts WHERE id=? AND trip_id=?').bind(c.req.param('id'), c.get('tripId')).first();
+  if (!post) return c.json({ error: '게시물을 찾을 수 없어요.' }, 404);
+  const comments = await c.env.DB.prepare(`SELECT pc.id,pc.author_id,u.name author_name,u.avatar_color,u.avatar_key,pc.content,pc.created_at
+    FROM post_comments pc JOIN users u ON u.id=pc.author_id WHERE pc.post_id=? ORDER BY pc.created_at,pc.id`).bind(c.req.param('id')).all();
+  return c.json({ comments: comments.results });
 });
 
 boardRoutes.delete('/posts/:postId/comments/:commentId', async (c) => {
