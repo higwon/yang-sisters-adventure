@@ -1,0 +1,56 @@
+[
+  {
+    "page": "board",
+    "viewport": "390",
+    "innerWidth": 390,
+    "bodyScrollWidth": 390,
+    "documentScrollWidth": 390,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 0,
+        "width": 390,
+        "right": 390
+      },
+      ".content": {
+        "left": 0,
+        "width": 390,
+        "right": 390
+      },
+      ".boardPage": {
+        "left": 0,
+        "width": 390,
+        "right": 390
+      },
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  },
+  {
+    "page": "board",
+    "viewport": "1440",
+    "innerWidth": 1440,
+    "bodyScrollWidth": 1440,
+    "documentScrollWidth": 1440,
+    "blocks": {
+      ".workspaceMain": {
+        "left": 244,
+        "width": 1196,
+        "right": 1440
+      },
+      ".content": {
+        "left": 244,
+        "width": 1196,
+        "right": 1440
+      },
+      ".boardPage": {
+        "left": 412,
+        "width": 860,
+        "right": 1272
+      },
+      ".schedule-page": null,
+      ".expenses-page": null,
+      ".settings-page": null
+    }
+  }
+]

@@ -22,7 +22,7 @@ async function loadPosts(page = 1) {
   return { ...result, posts: result.posts.map((post) => ({ ...post,
     attachments: typeof post.attachments === 'string' ? JSON.parse(post.attachments) as BoardAttachment[] : post.attachments,
     conversions: typeof post.conversions === 'string' ? JSON.parse(post.conversions) as BoardConversion[] : post.conversions,
-    comments: (typeof post.comments === 'string' ? JSON.parse(post.comments) as BoardComment[] : post.comments).reverse(),
+    comments: typeof post.comments === 'string' ? JSON.parse(post.comments) as BoardComment[] : post.comments,
   })) };
 }
 
@@ -61,7 +61,7 @@ export const boardApi = {
   deletePost: async (id: number) => { const result = await response<{ ok: boolean }>(await fetch(`${base()}/posts/${id}`, { method: 'DELETE' })); invalidatePosts(); return result; },
   convertPost: async (id: number, target_type: BoardConversion['target_type']) => { const result = await response<{ target_id: number }>(await fetch(`${base()}/posts/${id}/convert`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ target_type }) })); invalidatePosts(); return result; },
   comments: async (postId: number) => response<{ comments: BoardComment[] }>(await fetch(`${base()}/posts/${postId}/comments`)),
-  createComment: async (postId: number, content: string) => response<BoardComment>(await fetch(`${base()}/posts/${postId}/comments`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ content }) })),
+  createComment: async (postId: number, content: string) => { const result = await response<BoardComment>(await fetch(`${base()}/posts/${postId}/comments`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ content }) })); invalidatePosts(); return result; },
   deleteComment: async (postId: number, commentId: number) => { const result = await response<{ ok: boolean }>(await fetch(`${base()}/posts/${postId}/comments/${commentId}`, { method: 'DELETE' })); invalidatePosts(); return result; },
   prefetch: async () => { await boardApi.posts(1); },
   attachmentUrl: (id: number) => `${base()}/attachments/${id}`,

@@ -24,8 +24,11 @@ boardRoutes.get('/posts', async (c) => {
       (SELECT json_group_array(json_object('target_type',pc.target_type,'target_id',pc.target_id)) FROM post_conversions pc WHERE pc.post_id=p.id) conversions
       ,(SELECT COUNT(*) FROM post_comments pc WHERE pc.post_id=p.id) comment_count
       ,(SELECT json_group_array(json_object('id',c.id,'author_id',c.author_id,'author_name',c.author_name,'avatar_color',c.avatar_color,'avatar_key',c.avatar_key,'content',c.content,'created_at',c.created_at)) FROM (
-        SELECT pc.id,pc.author_id,u.name author_name,u.avatar_color,u.avatar_key,pc.content,pc.created_at
-        FROM post_comments pc JOIN users u ON u.id=pc.author_id WHERE pc.post_id=p.id ORDER BY pc.created_at DESC,pc.id DESC LIMIT 2
+        SELECT latest.* FROM (
+          SELECT pc.id,pc.author_id,u.name author_name,u.avatar_color,u.avatar_key,pc.content,pc.created_at
+          FROM post_comments pc JOIN users u ON u.id=pc.author_id WHERE pc.post_id=p.id
+          ORDER BY pc.created_at DESC,pc.id DESC LIMIT 2
+        ) latest ORDER BY latest.created_at,latest.id
       ) c) comments
       FROM posts p JOIN users u ON u.id=p.author_id WHERE p.trip_id=? ORDER BY p.created_at DESC,p.id DESC LIMIT ? OFFSET ?`)
       .bind(tripId, limit, offset).all(),
