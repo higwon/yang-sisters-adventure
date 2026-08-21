@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { ArrowRight, ChevronDown, Inbox, Link, Plus, Trash2, X } from 'lucide-react';
 import { api } from '../../api';
 import type { PlanningItem } from '../../domain';
+import { TimeSelect } from './TimeSelect';
 
 const types = ['관광', '식사', '카페', '쇼핑', '이동', '기타'];
 const formatDay = (date: string) => new Intl.DateTimeFormat('ko-KR', { month: 'numeric', day: 'numeric', weekday: 'short' }).format(new Date(`${date}T00:00:00`));
@@ -19,5 +20,5 @@ function PlanningEditor({ close, done }: { close: () => void; done: () => void }
 }
 function ScheduleCandidate({ item, dates, close, done }: { item: PlanningItem; dates: string[]; close: () => void; done: () => void }) {
   const [error, setError] = useState(''); const submit = async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); const values = Object.fromEntries(new FormData(event.currentTarget)); try { await api.schedulePlanning(item.id, { day_date: values.day_date, start_time: values.start_time || null, end_time: values.end_time || null }); close(); done(); } catch (reason) { setError(reason instanceof Error ? reason.message : '일정으로 옮기지 못했습니다.'); } };
-  return <Dialog close={close}><header><div><h2>{item.title}</h2></div><button type="button" onClick={close}><X /></button></header><p>날짜를 정하면 일정 후보로 표시돼요.</p><form onSubmit={submit}><label>날짜<select name="day_date">{dates.map((date, index) => <option value={date} key={date}>DAY {index + 1} · {formatDay(date)}</option>)}</select></label><div className="formRow"><label>시작<input name="start_time" type="time" /></label><label>종료<input name="end_time" type="time" /></label></div>{error && <p className="errorText">{error}</p>}<button type="submit" className="primary">DAY에 배치</button></form></Dialog>;
+  return <Dialog close={close}><header><div><h2>{item.title}</h2></div><button type="button" onClick={close}><X /></button></header><p>날짜를 정하면 일정 후보로 표시돼요.</p><form onSubmit={submit}><label>날짜<select name="day_date">{dates.map((date, index) => <option value={date} key={date}>DAY {index + 1} · {formatDay(date)}</option>)}</select></label><div className="formRow timeRow"><TimeSelect name="start_time" label="시작" /><TimeSelect name="end_time" label="종료" /></div>{error && <p className="errorText">{error}</p>}<button type="submit" className="primary">DAY에 배치</button></form></Dialog>;
 }
